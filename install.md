@@ -1,0 +1,86 @@
+# [AIPS](http://www.aips.nrao.edu/dec24.shtml)
+- Download AIPS wizard file 
+```
+wget http://www.aips.nrao.edu/31DEC24/install.pl
+```
+- Assign Execution Permissions
+```
+chmod +x install.pl
+```
+- install AIPS 
+```
+perl install.pl -n
+```
+- AIPS setting
+```
+   AIPS_ROOT (screen 3): /share/data/askap/bqlao/EAVN/software/AIPS
+       Group (screen 4): polarization
+ Group Write (screen 4): YES
+Architecture (screen 5): LNX64
+   Site name (screen 5): BQLAO
+  AIPS hosts (screen 6): LOCALHOST
+  Data areas (screen 7): /share/data/askap/bqlao/EAVN/software/AIPS/DATA/LOCALHOST_1
+    Printers (screen 8):   Paper type (screen 8): A4
+ Tape drives (screen 9): 
+  Tape hosts (screen 9): 127.0.0.1
+```
+- add follows content to /etc/services
+```
+sssin           5000/tcp        SSSIN      # AIPS TV server
+ssslock         5002/tcp        SSSLOCK    # AIPS TV Lock
+msgserv         5008/tcp        MSGSERV    # AIPS Message Server
+tekserv         5009/tcp        TEKSERV    # AIPS TekServer
+aipsmt0         5010/tcp        AIPSMT0    # AIPS remote FITS disk access
+aipsmt1         5011/tcp        AIPSMT1    # AIPS remote tape 1
+aipsmt2         5012/tcp        AIPSMT2    # AIPS remote tape 2
+aipsmt3         5013/tcp        AIPSMT3
+aipsmt4         5014/tcp        AIPSMT4
+aipsmt5         5015/tcp        AIPSMT5
+aipsmt6         5016/tcp        AIPSMT6
+aipsmt7         5017/tcp        AIPSMT7
+
+```
+- disable the original item 5002 
+```
+#rfe 5002/udp
+#rfe 5002/tcp
+```
+- add AIPS environment and test
+```
+>source /share/data/askap/bqlao/EAVN/software/AIPS/LOGIN.SH 
+>aips
+```
+# PGPLOT
+- download
+```
+wget ftp://ftp.astro.caltech.edu/pub/pgplot/pgplot5.2.tar.gz
+```
+- install
+```
+../pgplot/makemake ../pgplot linux g77_gcc shared
+```
+
+# difmap
+- download
+```
+wget ftp://ftp.astro.caltech.edu/pub/difmap/difmap2.5q.tar.gz
+```
+- install
+```
+./configure linux-i486-gcc
+./makeall
+```
+
+# Anaconda (python >=3.8,<3.9.0a0)
+- download and install
+```
+wget https://mirrors.tuna.tsinghua.edu.cn/anaconda/archive/Anaconda3-2024.02-1-Linux-x86_64.sh
+chmod +x Anaconda3-2021.05-Linux-x86_64.sh
+./Anaconda3-2021.05-Linux-x86_64.sh
+```
+# [ParselTongue](https://www.jive.eu/jivewiki/doku.php?id=parseltongue:parseltongue) (3.0)
+```
+conda install -c kettenis parseltongue 
+```
+
+
