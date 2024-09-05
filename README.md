@@ -29,7 +29,7 @@ Baoqiang Lao, Yuzhu Cui
 ## References
 - [Cui, Y., Hada, K., on behalf of EAVN Science Working Group, Data reduction memo: Amplitude calibration guideline of TMRT and NSRT.](https://radio.kasi.re.kr/eavn/pdf/Amplitude_calibration_guideline_of_TMRT_and_NSRT.pdf)
 - [Cui, Y., Hada, K., Kawashima, T. et al. Precessing jet nozzle connecting to a spinning black hole in M87. Nature 621, 711–715 (2023).](https://www.nature.com/articles/s41586-023-06479-6)
-- [Cui, Y., Hada, K. et. al. East Asian VLBI Network observations of active galactic nuclei jets: imaging with KaVA+Tianma+Nanshan. Res. Astron. Astrophys. 21, 205 (2021).](https://www.raa-journal.org/issues/all/2021/v21n8/202203/t20220323_21975.html)
+- [Cui, Y., Hada, K. et al. East Asian VLBI Network observations of active galactic nuclei jets: imaging with KaVA+Tianma+Nanshan. Res. Astron. Astrophys. 21, 205 (2021).](https://www.raa-journal.org/issues/all/2021/v21n8/202203/t20220323_21975.html)
 
 ## Acknowledgements
 The data calibration code was developed based on the [EVN pipeline](https://www.jive.eu/jivewiki/doku.php?id=parseltongue:grimoire). Originally crafted by [Cormac Reynolds](reynolds@jive.nl), the EVN pipeline is now maintained and further developed by [Stephen Bourke](bourke@jive.nl). For those seeking a concise guide on executing the pipeline, a brief manual is accessible at [pypeline_public.pdf](https://www.jive.eu/jivewiki/lib/exe/fetch.php?media=parseltongue:pypeline_public.pdf).
