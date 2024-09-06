@@ -283,7 +283,7 @@ def runaccor(indata):
 
 def runclcal(snver, indata, refant, gainver=0, gainuse=0, opcode='CALI',
         interpol='self', calsour=[], sources=[], samptype='',
-        doblank=0, dobtween=0):
+        doblank=0, dobtween=0, inver=0):
     # function to run clcal. Don't allow default snver.
     """Must set snver, refant, indata"""
 
@@ -292,17 +292,18 @@ def runclcal(snver, indata, refant, gainver=0, gainuse=0, opcode='CALI',
     logger.info('Task CLCAL  (release of 31DEC24) begins')
     clcal = AIPSTask('clcal')
     clcal.indata = indata
-    clcal.subarray = 1
+    #clcal.subarray = 1
     clcal.calsour[1:] = calsour
     clcal.sources[1:] = sources
-    clcal.opcode = opcode
+    #clcal.opcode = opcode
     clcal.interpol = interpol
     #clcal.intparm = 0.00001
     clcal.samptype = samptype
-    clcal.doblank = doblank
-    clcal.dobtween = dobtween
+    #clcal.doblank = doblank
+    #clcal.dobtween = dobtween
     clcal.refant = refant
     clcal.snver = snver
+    clcal.inver = inver
     clcal.gainver = gainver
     clcal.gainuse = gainuse
     clcal()
@@ -344,14 +345,18 @@ def runapcal(indata, tyver=1, gcver=1, snver=1, freqid=1, opcode='grid'):
     #assert (indata != None)
     logger.info('Task APCAL  (release of 31DEC24) begins')
     apcal = AIPSTask('apcal')
+    apcal.source = []
+    apcal.antenna = []
     apcal.aparm[1] = 1.3
     apcal.dofit[7] = 1
     apcal.indata = indata
-    apcal.freqid = freqid
+    apcal.dofit[1] = -1
+    #apcal.freqid = freqid
     apcal.tyver = tyver
     apcal.gcver = gcver
     apcal.snver = snver
-    apcal.prtlev = 1
+    apcal.opcode = opcode
+    #apcal.prtlev = 1
     apcal()
     logger.info('Task APCAL appears to have ended successfully')
 
@@ -367,10 +372,10 @@ def runantab(antab_file, indata, tyver=1, gcver=1, offset=0., sparm=[]):
     except AttributeError:
         antab.infile = antab_file
     antab.indata = indata
-    antab.tyver = tyver
-    antab.gcver = gcver
-    antab.offset = 0.
-    antab.sparm[1:] = sparm
+    #antab.tyver = tyver
+    #antab.gcver = gcver
+    #antab.offset = 0.
+    #antab.sparm[1:] = sparm
     antab()
     logger.info('Task ANTAB appears to have ended successfully')
    
@@ -423,7 +428,7 @@ def runfring(indata, snver, solint, aparm, dparm, refant, freqid=1,
 
     fring.indata = indata
     fring.outdata = indata
-    fring.freqid = freqid
+    #fring.freqid = freqid
     fring.gainuse = gainuse
     fring.bpver = 1
     fring.doband = 1

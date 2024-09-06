@@ -364,7 +364,7 @@ def EAVN_ampcal(antab_file, uvdata):
     #run CLCAL --> CL 2
     runclcal(gainver=1, gainuse=2, indata=uvdata, snver=1,
             refant=8, interpol='self', doblank=1, dobtween=1,
-            samptype='') #refant=refantlist[0]
+            samptype='', inver=0) #refant=refantlist[0]
     uvdata.zap_table('AIPS PL', -1)
     aparm = [1,0,0,0,-180,180,0,0,0,0]
     runpossm(indata=uvdata, aparm=aparm, solint=-1, freqid=1, sources=[],
@@ -408,7 +408,7 @@ def EAVN_ampcal(antab_file, uvdata):
     # use 'box', dobtween and doblank so no sources get left out
     runclcal(gainver=2, gainuse=3, indata=uvdata, snver=3,
             refant=8, interpol='self', doblank=1, dobtween=1,
-            samptype='')
+            samptype='', inver=3)
 
     uvdata.zap_table('AIPS PL', -1)
     runsnplt(uvdata, 'CL', 3, 'AMP')
@@ -428,9 +428,9 @@ def EAVN_fring(fringdata):
     dparm[1:] = [0 for i in range(10)]
     dparm[2] = 100
     dparm[3] = 100
-    calsours = selfcal_sources
-    calsours.remove('RT-VIR') 
-    #calsours = ['-RT-VIR']
+    #calsours = selfcal_sources
+    #calsours.remove('RT-VIR') 
+    calsours = ['-RT-VIR']
     runfring(indata=fringdata, snver=5, gainuse=3, refant=8, 
             solint=0.5, calsour=calsours,
             aparm=aparm, dparm=dparm)
@@ -443,9 +443,9 @@ def EAVN_fring(fringdata):
     target = target_sources
     #for (calibrator, target) in ( zip (phaseref_sources, target_sources) +
     #                zip (selfcal_sources, selfcal_sources)):
-    runclcal(indata=uvdata, opcode='CALI', interpol='AMBG', snver=5,
-                gainver=3, gainuse=4, calsour=calibrator, sources=target,
-                refant=refantlist[0])
+    runclcal(indata=uvdata, opcode='CALI', interpol='2pt', snver=5,
+                gainver=3, gainuse=4, calsour=[], sources=[],
+                refant=5, inver=5) #refantlist[0]
     uvdata.zap_table('AIPS PL', -1)
     aparm = [0,0,0,0,-180,180,0,0,0,0]
     runpossm(indata=uvdata, aparm=aparm, solint=-1, freqid=1, sources=calibrator[0],
@@ -570,7 +570,7 @@ if tmask[0] <= 6 <= tmask[1]:
         splitdata = AIPSUVData(source, 'SPLIT', uvdata.disk, 1)
         zap_old_data(splitdata)
 
-    runsplit(sources=sources, indata=uvdata, gainuse=3,
+    runsplit(sources=sources, indata=uvdata, gainuse=4,
             doband=nbp_table, bpver=nbp_table, outseq=1)
 
     logger.info('Ending tmask 6')
