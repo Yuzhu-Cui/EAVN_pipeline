@@ -47,7 +47,7 @@ def checkin(control):
     global bpass_calibrators, phaseref_sources, target_sources, avg, plotavg
     global tmask, fitsdir, fits_file, nselfcal, doplot, msgkill
     global source_select, experiment_dir, output_prefix, nbp_table, fring_snr
-    global disk, freqid, dopng
+    global disk, freqid, dopng, rmcalsour, fit_ant
 
     EAVN_aips_tasks.AIPSTask.version = control['version']['default']
     EAVN_aips_tasks.task_versions = control['version']
@@ -104,6 +104,12 @@ def checkin(control):
     target_sources = control.get('target', [])
     for i in range(len(target_sources)):
         target_sources[i] = target_sources[i].upper()
+
+    rmcalsour = control.get('rmcalsour', [])
+    for i in range(len(rmcalsour)):
+        rmcalsour[i] = rmcalsour[i].upper()
+
+    fit_ant = control['fit_ant'][0].lower()
 
     avg = float(control.get('avg', [0])[0])
 
@@ -363,7 +369,7 @@ def EAVN_ampcal(antab_file, uvdata):
 
     #run CLCAL --> CL 2
     runclcal(gainver=1, gainuse=2, indata=uvdata, snver=1,
-            refant=8, interpol='self', doblank=1, dobtween=1,
+            refant=refantlist[0], interpol='self', doblank=1, dobtween=1,
             samptype='', inver=0) #refant=refantlist[0]
     uvdata.zap_table('AIPS PL', -1)
     aparm = [1,0,0,0,-180,180,0,0,0,0]
@@ -393,21 +399,22 @@ def EAVN_ampcal(antab_file, uvdata):
     plot(uvdata, def_name('TSYS'), dopng=dopng)
 
     #Generate SN 2-4 table
-    runapcal(indata=uvdata, tyver=1, gcver=1, snver=2, freqid=1, opcode='grid')
+    ant_id = int(get_ant_num(uvdata, fit_ant))
+    runapcal(indata=uvdata, tyver=1, gcver=1, snver=2, freqid=1, opcode='grid', ant_id)
     uvdata.zap_table('AIPS PL', -1)
     runsnplt(uvdata, 'SN', 2, 'AMP')
     plot(uvdata, def_name('SN2'), dopng=dopng)
-    runapcal(indata=uvdata, tyver=1, gcver=1, snver=3, freqid=1, opcode='opac')
+    runapcal(indata=uvdata, tyver=1, gcver=1, snver=3, freqid=1, opcode='opac', ant_id)
     uvdata.zap_table('AIPS PL', -1)
     runsnplt(uvdata, 'SN', 3, 'AMP')
     plot(uvdata, def_name('SN3'), dopng=dopng)
-    runapcal(indata=uvdata, tyver=1, gcver=1, snver=4, freqid=1, opcode='lesq')
+    runapcal(indata=uvdata, tyver=1, gcver=1, snver=4, freqid=1, opcode='lesq', ant_id)
     uvdata.zap_table('AIPS PL', -1)
     runsnplt(uvdata, 'SN', 4, 'AMP')
     plot(uvdata, def_name('SN4'), dopng=dopng)
     # use 'box', dobtween and doblank so no sources get left out
     runclcal(gainver=2, gainuse=3, indata=uvdata, snver=3,
-            refant=8, interpol='self', doblank=1, dobtween=1,
+            refant=refantlist[0], interpol='self', doblank=1, dobtween=1,
             samptype='', inver=3)
 
     uvdata.zap_table('AIPS PL', -1)
@@ -417,7 +424,7 @@ def EAVN_ampcal(antab_file, uvdata):
     # Do the parallactic angle correction.
     #runclcor(indata=uvdata, clcorprm=[0,1], opcode='PANG', gainver=2, gainuse=2)            
 
-def EAVN_fring(fringdata):
+def EAVN_fring(fringdata, rmcalsour):
     # run fring (on averaged data set if necessary)
 
     aparm = []
@@ -430,10 +437,11 @@ def EAVN_fring(fringdata):
     dparm[3] = 100
     #calsours = selfcal_sources
     #calsours.remove('RT-VIR') 
-    calsours = ['-RT-VIR']
-    runfring(indata=fringdata, snver=5, gainuse=3, refant=8, 
+    rmcalsour_str = '-%s' % rmcalsour[0]
+    calsours = [rmcalsour_str]
+    runfring(indata=fringdata, snver=5, gainuse=3, refant=refantlist[0], 
             solint=0.5, calsour=calsours,
-            aparm=aparm, dparm=dparm)
+            aparm=aparm, dparm=dparm, snr=fring_snr)
 
     uvdata.zap_table('AIPS PL', -1)
     runsnplt(uvdata, 'SN', 5, 'AMP')
@@ -443,9 +451,10 @@ def EAVN_fring(fringdata):
     target = target_sources
     #for (calibrator, target) in ( zip (phaseref_sources, target_sources) +
     #                zip (selfcal_sources, selfcal_sources)):
+    logger.info('refant is %d' % refantlist[0])
     runclcal(indata=uvdata, opcode='CALI', interpol='2pt', snver=5,
                 gainver=3, gainuse=4, calsour=[], sources=[],
-                refant=5, inver=5) #refantlist[0]
+                refant=refantlist[0], inver=5) #refantlist[0]
     uvdata.zap_table('AIPS PL', -1)
     aparm = [0,0,0,0,-180,180,0,0,0,0]
     runpossm(indata=uvdata, aparm=aparm, solint=-1, freqid=1, sources=calibrator[0],
@@ -548,7 +557,7 @@ if tmask[0] <= 4 <= tmask[1] and nbp_table:
     logger.info('Starting tmask 4: bandpass calibration')
     table_vers(uvdata=uvdata, cl=3, sn=3, fg=0, bp=0)
 
-    runbpass(refant=8,indata=uvdata, calsour=bpass_calibrators) #refant=refantlist[0]
+    runbpass(refant=refantlist[0],indata=uvdata, calsour=bpass_calibrators) #refant=refantlist[0]
     # Do the less time consuming plots now
     EAVN_plot2a(uvdata)
     logger.info('Ending tmask 4')
@@ -558,7 +567,7 @@ if tmask[0] <= 5 <= tmask[1]:
     logger.info('Starting tmask 5: fringe fitting')
     table_vers(uvdata=uvdata, cl=3, sn=3, fg=0, bp=nbp_table)
     
-    EAVN_fring(uvdata)
+    EAVN_fring(uvdata, rmcalsour)
     logger.info('Ending tmask 5')
 
 # 6, Split

@@ -340,17 +340,17 @@ def runsnplt(indata, inext='SN', invers=0, optype='PHAS', dotv=-1, antennas=[],
     logger.info('Task SNPLT appears to have ended successfully')
     return error
 
-def runapcal(indata, tyver=1, gcver=1, snver=1, freqid=1, opcode='grid'):
+def runapcal(indata, tyver=1, gcver=1, snver=1, freqid=1, opcode='grid', ant_id):
     """Must set indata"""
     #assert (indata != None)
     logger.info('Task APCAL  (release of 31DEC24) begins')
     apcal = AIPSTask('apcal')
     apcal.source = []
     apcal.antenna = []
+    apcal.dofit[1:] = -1
     apcal.aparm[1] = 1.3
-    apcal.dofit[7] = 1
+    apcal.dofit[ant_id] = 1
     apcal.indata = indata
-    apcal.dofit[1] = -1
     #apcal.freqid = freqid
     apcal.tyver = tyver
     apcal.gcver = gcver
@@ -408,7 +408,7 @@ def runbpass(refant, indata, calsour):
     logger.info('Task BPASS appears to have ended successfully')
 
 def runfring(indata, snver, solint, aparm, dparm, refant, freqid=1, 
-        gainuse=0, calsour=[]):
+        gainuse=0, calsour=[], snr):
 
     """Must set indata, snver, solint, refantlist, aparm, dparm"""
     #assert (indata != None, snver != None, solint != None, refantlist != None,
@@ -441,7 +441,7 @@ def runfring(indata, snver, solint, aparm, dparm, refant, freqid=1,
     fring.solint = solint
     fring.calsour[1:] = calsour
     fring.aparm[1:] = aparm[1:]
-    #fring.aparm[7] = snr
+    fring.aparm[7] = snr
     fring.dparm[1:] = dparm[1:]
     fring()
     logger.info('Task FRING appears to have ended successfully')
