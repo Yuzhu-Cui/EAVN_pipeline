@@ -24,13 +24,14 @@ def uvaver(inputfile):
 
 
 def check_data(uvfile):
+    print('Start  checking data ... ...')
     uv = UVFits(uvfile)
 
     uv.u = uv.u_raw * uv.freq / 1e6 # multiply by frequency to get uv distance in wavelengths. 1e6 to convert to Megalambdas
     uv.v = uv.v_raw * uv.freq / 1e6
     uv.r = np.sqrt(uv.u**2 + uv.v**2)
 
-    print(len(uv.u))
+    #print(len(uv.u))
     bl= uv.baselines
     suba = uv.subarrays
     ant1 = uv.ant1_inds
@@ -44,18 +45,22 @@ def check_data(uvfile):
     ant1_n = np.array(ant1_n)
     ant2_n = np.array(ant2_n)
     ant_n_all = list(set(list(set(ant1_n)) + list(set(ant2_n))))
-    print(ant_n_all)
+    print('Antennas: ', ant_n_all)
     fig, ax = plt.subplots(1,1, figsize=(8,6))
     colors = ['b', 'k', 'r', 'g', 'm', 'y', 'c']
     markers = ['o', '.', '^', '*', 'v', 's', 'D']
+    amp_means = []
+    amp_medians = []
     for m,ant in enumerate(ant_n_all):
         ant1_bl, = np.where(ant1_n == ant)
         ant2_bl, = np.where(ant2_n == ant)
         ant_bl = np.hstack((ant1_bl,ant2_bl))
         ant_bl_final = np.array(list(set(ant_bl)))
-        print(uv.r[ant_bl_final].shape, uv.amplitudes[ant_bl_final].shape)
+        #print(uv.r[ant_bl_final].shape, uv.amplitudes[ant_bl_final].shape)
         bl = uv.r[ant_bl_final]
         amp =  uv.amplitudes[ant_bl_final]
+        amp_means.append(np.mean(amp))
+        amp_medians.append(np.median(amp))
         ax.scatter(bl, amp[:,0], marker=markers[m], label=ant, edgecolors=colors[m], color='') #, alpha=0.5)
         #ax.scatter(uv.r[ant_bl_final], uv.amplitudes[ant_bl_final][:,0], '.', label=ant, color=colors[m])
     ax.set_ylabel('Correlated flux density [Jy]')
@@ -64,6 +69,14 @@ def check_data(uvfile):
     #print(os.path.basename(uvfile))
     plt.savefig('./data/radplot_check_%s.png' % os.path.basename(uvfile))
     plt.close(fig)
+    amp_level = np.mean(np.array(amp_means))
+    amp_diff = abs(np.array(amp_means) - amp_level)
+    ant_id, = np.where(amp_diff==np.max(amp_diff))
+    #print(ant_id)
+    #print(amp_means, amp_medians)
+    print('Abnormal antenna is: ', ant_n_all[ant_id[0]])
+    print('Check done!')
+    return ant_n_all[ant_id[0]]
 
 def flag_data(inputfile, antn):
     if os.path.exists(os.path.splitext(inputfile)[0] + "_flag.uvf"):
@@ -143,11 +156,11 @@ def difmap_imaging(vis_file, out_dir, flag_ant,
 
 #1. strong point source processing
 #uv average 
-input_uvfits = './data/a17078a_3C273.UVDATA.FITS'
-uvaver_file = uvaver(input_uvfits)
+poitsource_uvfits = './data/a17078a_1219+044.UVDATA.FITS'
+uvaver_file = uvaver(poitsource_uvfits)
 
 #check antenna baseline data
-check_data(uvaver_file)
+flag_ant = check_data(uvaver_file)#poitsource_uvfits)
 
 #flag data test
 #antn = "TIA"
@@ -160,10 +173,11 @@ check_data(uvaver_file)
 # target source imaging
 vis_file = './data/a17078a_M87.UVDATA.FITS'
 flag_ant = 'TIA'
-clean_win_file = './data/kava2_selfcal0.5clean.win' 
+clean_win_file = './data/kava2_selfcal0.5clean.win'
+target_source = 'M87' 
 difmap_imaging(vis_file=vis_file, out_dir='./data', flag_ant=flag_ant,
-                   clean_sigma=3,
+                   clean_sigma=1,
                    map_size=2048,
                    pixel_size=0.02,
-                   clean_win_file=clean_win_file, target_name='M87')
+                   clean_win_file=clean_win_file, target_name=target_source)
 
