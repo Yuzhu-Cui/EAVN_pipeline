@@ -400,15 +400,16 @@ def EAVN_ampcal(antab_file, uvdata):
 
     #Generate SN 2-4 table
     ant_id = int(get_ant_num(uvdata, fit_ant))
-    runapcal(indata=uvdata, tyver=1, gcver=1, snver=2, freqid=1, opcode='grid', ant_id)
+    len_ants = len(uvdata.antennas)
+    runapcal(indata=uvdata, tyver=1, gcver=1, snver=2, freqid=1, opcode='grid', ant_id=ant_id, len_ants=len_ants)
     uvdata.zap_table('AIPS PL', -1)
     runsnplt(uvdata, 'SN', 2, 'AMP')
     plot(uvdata, def_name('SN2'), dopng=dopng)
-    runapcal(indata=uvdata, tyver=1, gcver=1, snver=3, freqid=1, opcode='opac', ant_id)
+    runapcal(indata=uvdata, tyver=1, gcver=1, snver=3, freqid=1, opcode='opac', ant_id=ant_id, len_ants=len_ants)
     uvdata.zap_table('AIPS PL', -1)
     runsnplt(uvdata, 'SN', 3, 'AMP')
     plot(uvdata, def_name('SN3'), dopng=dopng)
-    runapcal(indata=uvdata, tyver=1, gcver=1, snver=4, freqid=1, opcode='lesq', ant_id)
+    runapcal(indata=uvdata, tyver=1, gcver=1, snver=4, freqid=1, opcode='lesq', ant_id=ant_id, len_ants=len_ants)
     uvdata.zap_table('AIPS PL', -1)
     runsnplt(uvdata, 'SN', 4, 'AMP')
     plot(uvdata, def_name('SN4'), dopng=dopng)
@@ -465,7 +466,7 @@ def EAVN_fring(fringdata, rmcalsour):
 
 
 #Start main function
-log_file = 'aips_log_{}.log'.format(datetime.now().strftime('%Y%m%d%H%M%S'))
+log_file = 'aips_{}.log'.format(datetime.now().strftime('%Y%m%d%H%M%S'))
 logging.basicConfig(level=logging.INFO,#logging.DEBUG, #logging.INFO
                     filename=log_file,
                     datefmt='%Y/%m/%d %H:%M:%S',
@@ -579,8 +580,8 @@ if tmask[0] <= 6 <= tmask[1]:
         splitdata = AIPSUVData(source, 'SPLIT', uvdata.disk, 1)
         zap_old_data(splitdata)
 
-    runsplit(sources=sources, indata=uvdata, gainuse=4,
-            doband=nbp_table, bpver=nbp_table, outseq=1)
+    runsplit(sources=sources, indata=uvdata, gainuse=4, docalib=1,
+            doband=nbp_table, bpver=nbp_table) #, outseq=1)
 
     logger.info('Ending tmask 6')
 

@@ -3,7 +3,7 @@
 
 # tmask is a range of steps to be carried out. tmask=1 will run the whole
 # pipeline. 
-tmask = 1
+tmask = 6
 
 # if a multiple pass experiment then append the pass number to the experiment
 # name (e.g. M87)
@@ -33,9 +33,12 @@ target = M87
 
 # directories default to $IN/<experiment>, $OUT/<experiment>,
 # $PIPEFITS/<experiment>
-fitsdir = /share/data/askap/bqlao/EAVN/EAVN_pipeline/data 
-indir =  /share/data/askap/bqlao/EAVN/EAVN_pipeline/data
-outdir =   /share/data/askap/bqlao/EAVN/EAVN_pipeline/data
+fitsdir = /media/hero/Intel6/EAVN/EAVN_pipeline/data
+#/share/data/askap/bqlao/EAVN/EAVN_pipeline/data 
+indir = /media/hero/Intel6/EAVN/EAVN_pipeline/data
+#/share/data/askap/bqlao/EAVN/EAVN_pipeline/data
+outdir = /media/hero/Intel6/EAVN/EAVN_pipeline/data   
+#/share/data/askap/bqlao/EAVN/EAVN_pipeline/data
 
 # fits_file defaults to EVN archive standard names. Do not give the full path
 # (the directory will be taken from the fitsdir parameter)

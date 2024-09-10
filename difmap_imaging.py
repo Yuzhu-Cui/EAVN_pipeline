@@ -46,7 +46,8 @@ def check_data(uvfile):
     ant_n_all = list(set(list(set(ant1_n)) + list(set(ant2_n))))
     print(ant_n_all)
     fig, ax = plt.subplots(1,1, figsize=(8,6))
-    colors = ['k', 'b', 'r', 'g', 'm', 'y', 'c']
+    colors = ['b', 'k', 'r', 'g', 'm', 'y', 'c']
+    markers = ['o', '.', '^', '*', 'v', 's', 'D']
     for m,ant in enumerate(ant_n_all):
         ant1_bl, = np.where(ant1_n == ant)
         ant2_bl, = np.where(ant2_n == ant)
@@ -55,7 +56,7 @@ def check_data(uvfile):
         print(uv.r[ant_bl_final].shape, uv.amplitudes[ant_bl_final].shape)
         bl = uv.r[ant_bl_final]
         amp =  uv.amplitudes[ant_bl_final]
-        ax.scatter(bl, amp[:,0], marker='.', label=ant, color=colors[m]) #, alpha=0.5)
+        ax.scatter(bl, amp[:,0], marker=markers[m], label=ant, edgecolors=colors[m], color='') #, alpha=0.5)
         #ax.scatter(uv.r[ant_bl_final], uv.amplitudes[ant_bl_final][:,0], '.', label=ant, color=colors[m])
     ax.set_ylabel('Correlated flux density [Jy]')
     ax.set_xlabel(r'Baseline length projection [M$\lambda$]')
@@ -64,14 +65,14 @@ def check_data(uvfile):
     plt.savefig('./data/radplot_check_%s.png' % os.path.basename(uvfile))
     plt.close(fig)
 
-def flag_data(inputfile):
+def flag_data(inputfile, antn):
     if os.path.exists(os.path.splitext(inputfile)[0] + "_flag.uvf"):
        print('%s already exists!' % (os.path.splitext(inputfile)[0] + "_flag.uvf"))
     else:
        difmap = subprocess.Popen("difmap", stdin=subprocess.PIPE, stdout=logfile)
        difmap.stdin.write(("obs " + inputfile + "\n").encode())
        difmap.stdin.write(("select ll" + "\n").encode())
-       difmap.stdin.write(("flag TIA" + "\n").encode())
+       difmap.stdin.write(("flag %s" % antn + "\n").encode())
        difmap.stdin.write(("save " + os.path.splitext(inputfile)[0] + "_flag" + "\n").encode())
        difmap.stdin.write("exit\n\n".encode())
        #Wait for difmap exit
@@ -80,133 +81,89 @@ def flag_data(inputfile):
     return flag_file
 
 
-def difmap_imaging(vis_file,
-                   output_name,
+def difmap_imaging(vis_file, out_dir, flag_ant,
                    clean_sigma,
                    map_size,
                    pixel_size,
-                   observation_length):
-
-    float clean_sigma; clean_sigma  = {clean_sigma}
-    float map_size; map_size = {map_size}
-    float pixel_size; pixel_size = {pixel_size}
-    float observation_length; observation_length = {observation_length}
-    
-    float signal_to_noise_p;
-    float signal_to_noise_a;
-    	
+                   clean_win_file, target_name):
+    print('Start imaging processing ... ...')    	
     difmap = subprocess.Popen("difmap", stdin=subprocess.PIPE, stdout=logfile)
     difmap.stdin.write(("obs " + vis_file + "\n").encode())
     difmap.stdin.write(("select ll" + "\n").encode()) 
-    difmap.stdin.write(("mapsize %d %d" % (map_size,pixel_size) + "\n").encode())
-    difmap.stdin.write(("startmod %s,%d" % ("",1) + "\n").encode()) 
-    difmap.stdin.write(("uvw 2,0" + "\n").encode())
-    difmap.stdin.write(("peakwin 1.5" + "\n").encode())
-    difmap.stdin.write(("clean 100,0.05" + "\n").encode())
-    difmap.stdin.write(("selfcal false,false,0" + "\n").encode())
-    
-    #if snr > clean_sigma more calibration steps will be done
-    
+    difmap.stdin.write(("uvave 30,true" + "\n").encode())
+    difmap.stdin.write(("startmod" + "\n").encode())
+    difmap.stdin.write(("save %s/kava2_startmod" % out_dir + "\n").encode())
+    difmap.stdin.write(("mapcolor color" + "\n").encode())
+    difmap.stdin.write(("mapsize %d,%f" % (map_size,pixel_size) + "\n").encode())
+    difmap.stdin.write(("flag %s" % flag_ant + "\n").encode())
+    difmap.stdin.write(("save %s/kava2_flagtianma" % out_dir + "\n").encode())
+    #difmap.stdin.write(("uvw 0,-1" + "\n").encode())
+    difmap.stdin.write(("save %s/kava2_phase" % out_dir + "\n").encode())
+    difmap.stdin.write(("gscale" + "\n").encode())
+    difmap.stdin.write(("save %s/kava2_gscaleclean" % out_dir + "\n").encode())
+    for i in [120, 60, 20, 10, 6, 3, 1, 0.5]:
+        difmap.stdin.write(("selfcal true,true,%s" % i + "\n").encode())
+        difmap.stdin.write(("save %s/kava2_selfcal%sclean" % (out_dir, i) + "\n").encode())
+    difmap.stdin.write(("print imstat(rms)" + "\n").encode())
+    difmap.stdin.write(("unflag %s" % flag_ant + "\n").encode())
+    difmap.stdin.write(("selfant ,true,1" + "\n").encode())
+    difmap.stdin.write(("selfant tia,fal,1" + "\n").encode())
+    difmap.stdin.write(("save %s/tian2_fixkava" % out_dir + "\n").encode())
+    difmap.stdin.write(("uncal false,false,true" + "\n").encode())
+    difmap.stdin.write(("save %s/tian2_recovertianma" % out_dir + "\n").encode())
+    #difmap.stdin.write(("rmod tian2_recovertianma.mod" + "\n").encode())
     #clean-selfcal calibration:
-    #if(peak(flux,max)/imstat(rms) > clean_sigma)
-    #	repeat;\
-    #		peakwin 1.5; clean; selfcal
-    #	until(peak(flux,max)/imstat(rms) < clean_sigma)
-    #end if
-    #
-    #uvw 2,-1
-    #
-    #!clean-selfcal calibration:
-    #if(peak(flux,max)/imstat(rms) > clean_sigma)
-    #	repeat;\
-    #		peakwin 1.5; clean; selfcal
-    #	until(peak(flux,max)/imstat(rms) < clean_sigma)
-    #end if
-    #
-    #uvw 0,-1
-    #
-    #!clean-selfcal calibration:
-    #if(peak(flux,max)/imstat(rms) > clean_sigma)
-    #	repeat;\
-    #		peakwin 1.5; clean; selfcal
-    #	until(peak(flux,max)/imstat(rms) < clean_sigma)
-    #end if
-    #
-    #gscale
-    #
-    #!here one should use tlpot to determine the true value of actual_time
-    #
-    #!observation time domain calibration:
-    #signal_to_noise_p = peak(flux,max)/imstat(rms)
-    #repeat;\
-    #	selfcal true,true,observation_length
-    #	signal_to_noise_a = peak(flux,max)/imstat(rms)
-    #	if(peak(flux,max)/imstat(rms) > clean_sigma)
-    #		if(signal_to_noise_a <= signal_to_noise_p)
-    #			peakwin 1.5; clean; selfcal
-    #		observation_length=observation_length/2
-    #			signal_to_noise_a = signal_to_noise_p
-    #		end if
-    #		if(signal_to_noise_a > signal_to_noise_p)
-    #			clrmod false,true
-    #		observation_length=observation_length/2
-    #			signal_to_noise_a = signal_to_noise_p
-    #		end if
-    #	else
-    #		observation_length=observation_length/2
-    #	end if
-    #until(observation_length < 2)
-    #
-    #selfcal true,true,0
-    #
-    #delwin
-    #clean 1000,0.01
-    #device /NULL
-    #mapl
-    #cmul=3*imstat(rms)
-    #
-    #!Save image
-    #!device {obj}.ps/vcps
-    #device {obj}.ps/vps
-    #mapl clean, false 
-    #
-    #!get clean image and beam statistics
-    #print "MARKING_STRING"
-    #print peak(flux)
-    #print imstat(rms)
-    #print cmul
-    #print imstat(bmin)
-    #print imstat(bmaj)
-    #print imstat(bpa)
-    #print "END_MARKING"
-    #
-    #!save clean map into a fits file
-    #save {obj}
-    #
-    #!quit from difmap
-    #quit'''.format(obj_file=visibility_file,
-    #			obj=output_name,
-    #			clean_sigma=clean_sigma,
-    #			map_size=map_size,
-    #			pixel_size=pixel_size,
-    #			observation_length=observation_length));
-    #
-    #fn.close();
+    difmap.stdin.write(("rwin %s" % clean_win_file + "\n").encode())
+    difmap.stdin.write(("clean 1000,0.01" + "\n").encode())
+    difmap.stdin.write(("if(peak(flux,max)/imstat(rms) > 3) repeat; peakwin 1.5; clean; selfcal;  until(peak(flux,max)/imstat(rms) < 3) end if" + "\n").encode())
+
+    difmap.stdin.write(("gscale" + "\n").encode())
+    difmap.stdin.write(("save %s/tian2_flagisggscale" % out_dir + "\n").encode())
 
 
-#uv average
-input_uvfits = './data/a17078a.cal.fits'
+    for i in [120, 60, 30, 15, 6, 3, 1, 0.5]:
+        difmap.stdin.write(("selfcal true,true,%s" % i + "\n").encode())
+        difmap.stdin.write(("save %s/tian2_flagisgselfcal%sclean" % (out_dir, i) + "\n").encode())
+ 
+
+    difmap.stdin.write(("print imstat(rms)" + "\n").encode())
+    difmap.stdin.write(("delwin" + "\n").encode())
+    difmap.stdin.write(("device /NULL" + "\n").encode())
+    difmap.stdin.write(("mapl" + "\n").encode())
+    difmap.stdin.write(("mapcolor color" + "\n").encode())
+    difmap.stdin.write(("cmul=3*imstat(rms)" + "\n").encode())
+    #Save image
+    difmap.stdin.write(("device %s/%s.ps/vps" % (out_dir,target_name) + "\n").encode())
+    difmap.stdin.write(("mapl cln" + "\n").encode())    
+    difmap.stdin.write(("print \"MARKING_STRING\";print peak(flux);print imstat(rms);print cmul;print imstat(bmin);print imstat(bmaj);print imstat(bpa);print \"END_MARKING\"" + "\n").encode())
+    difmap.stdin.write(("save %s/%s" % (out_dir, target_name) + "\n").encode())
+    difmap.stdin.write(("exit\n\n").encode())
+    difmap.communicate()
+    print('imaging done!')
+
+#1. strong point source processing
+#uv average 
+input_uvfits = './data/a17078a_3C273.UVDATA.FITS'
 uvaver_file = uvaver(input_uvfits)
 
 #check antenna baseline data
 check_data(uvaver_file)
 
-#flag data
-flag_file = flag_data(uvaver_file)
+#flag data test
+#antn = "TIA"
+#flag_file = flag_data(uvaver_file, antn)
 
 #print(flag_file)
 #
-check_data(flag_file)
+#check_data(flag_file)
 
-
+# target source imaging
+vis_file = './data/a17078a_M87.UVDATA.FITS'
+flag_ant = 'TIA'
+clean_win_file = './data/kava2_selfcal0.5clean.win' 
+difmap_imaging(vis_file=vis_file, out_dir='./data', flag_ant=flag_ant,
+                   clean_sigma=3,
+                   map_size=2048,
+                   pixel_size=0.02,
+                   clean_win_file=clean_win_file, target_name='M87')
 

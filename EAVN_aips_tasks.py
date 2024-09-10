@@ -340,16 +340,20 @@ def runsnplt(indata, inext='SN', invers=0, optype='PHAS', dotv=-1, antennas=[],
     logger.info('Task SNPLT appears to have ended successfully')
     return error
 
-def runapcal(indata, tyver=1, gcver=1, snver=1, freqid=1, opcode='grid', ant_id):
+def runapcal(indata, tyver=1, gcver=1, snver=1, freqid=1, opcode='grid', ant_id=7, len_ants=7):
     """Must set indata"""
     #assert (indata != None)
     logger.info('Task APCAL  (release of 31DEC24) begins')
     apcal = AIPSTask('apcal')
     apcal.source = []
     apcal.antenna = []
-    apcal.dofit[1:] = -1
+    for i in range(len_ants): 
+        if (i+1) == ant_id:
+           apcal.dofit[ant_id] = 1
+        else:
+           apcal.dofit[i+1] = -1
     apcal.aparm[1] = 1.3
-    apcal.dofit[ant_id] = 1
+    #apcal.dofit[ant_id] = 1
     apcal.indata = indata
     #apcal.freqid = freqid
     apcal.tyver = tyver
@@ -408,7 +412,7 @@ def runbpass(refant, indata, calsour):
     logger.info('Task BPASS appears to have ended successfully')
 
 def runfring(indata, snver, solint, aparm, dparm, refant, freqid=1, 
-        gainuse=0, calsour=[], snr):
+        gainuse=0, calsour=[], snr=5):
 
     """Must set indata, snver, solint, refantlist, aparm, dparm"""
     #assert (indata != None, snver != None, solint != None, refantlist != None,
@@ -446,7 +450,7 @@ def runfring(indata, snver, solint, aparm, dparm, refant, freqid=1,
     fring()
     logger.info('Task FRING appears to have ended successfully')
 
-def runsplit(indata, sources=[], gainuse=0, doband=0, bpver=0, outseq=0,
+def runsplit(indata, sources=[], gainuse=0, doband=0, bpver=0, #outseq=0,
         docalib=2):
 
     """Must set indata"""
@@ -465,7 +469,7 @@ def runsplit(indata, sources=[], gainuse=0, doband=0, bpver=0, outseq=0,
     split.indata = indata
     split.outclass = 'SPLIT'
     split.outdisk = indata.disk
-    split.outseq = outseq
+    #split.outseq = outseq
     #split.subarray = 1
     split.bchan = 17
     split.echan = 240
@@ -473,7 +477,8 @@ def runsplit(indata, sources=[], gainuse=0, doband=0, bpver=0, outseq=0,
     split.docalib = docalib
     split.gainuse = gainuse
     split.doband = doband
-    split.aparm[1] = 1
+    split.aparm[1] = 2
+    split.bpver = bpver
     #split.aparm[4] = 1
     split()
 

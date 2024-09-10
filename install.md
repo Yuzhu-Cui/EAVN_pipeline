@@ -74,10 +74,21 @@ wget ftp://ftp.astro.caltech.edu/pub/difmap/difmap2.5q.tar.gz
 # Anaconda (python >=3.8,<3.9.0a0)
 - download and install
 ```
-wget https://mirrors.tuna.tsinghua.edu.cn/anaconda/archive/Anaconda3-2024.02-1-Linux-x86_64.sh
+wget https://mirrors.tuna.tsinghua.edu.cn/anaconda/archive/Anaconda3-2021.05-Linux-x86_64.sh
+```
+or  
+```
+wget --user-agent="Mozilla" https://mirrors.tuna.tsinghua.edu.cn/anaconda/archive/Anaconda3-2021.05-Linux-x86_64.sh
+```
+- Assign Execution Permissions  
+```
 chmod +x Anaconda3-2021.05-Linux-x86_64.sh
+```
+- install  
+```
 ./Anaconda3-2021.05-Linux-x86_64.sh
 ```
+
 # [ParselTongue](https://www.jive.eu/jivewiki/doku.php?id=parseltongue:parseltongue) (3.0)
 ```
 conda install -c kettenis parseltongue 

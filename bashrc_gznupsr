@@ -1,0 +1,18 @@
+#aips
+export AIPS_ROOT=/media/hero/Intel6/EAVN/software/AIPS
+source $AIPS_ROOT/LOGIN.SH
+
+#pgplot
+export PATH=/media/hero/Intel6/mwa_software/pgplot:$PATH
+export PGPLOT_DIR=/media/hero/Intel6/mwa_software/pgplot
+export LD_LIBRARY_PATH=/media/hero/Intel6/mwa_software/pgplot:$LD_LIBRARY_PATH
+export PGPLOT_FONT=/media/hero/Intel6/mwa_software/pgplot/grfont.dat
+export PGPLOT_DEV=/xwine
+export PGPLOT_LIB="-L /usr/lib/x86_64-linux-gnu -lX11 -L /media/hero/Intel6/mwa_software/pgplot -lpgplot"
+
+export PATH=/media/hero/Intel6/EAVN/software/uvf_difmap_2.5q:$PATH
+export LD_LIBRARY_PATH=/media/hero/Intel6/EAVN/software/uvf_difmap_2.5q/lib:$LD_LIBRARY_PATH
+export CPATH=/media/hero/Intel6/EAVN/software/uvf_difmap_2.5q/inlcude:$CPATH
+
+#anaconda3
+export PATH=/media/hero/Intel6/EAVN/software/anaconda3/bin:$PATH
