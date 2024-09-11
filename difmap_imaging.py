@@ -160,7 +160,7 @@ poitsource_uvfits = './data/a17078a_1219+044.UVDATA.FITS'
 uvaver_file = uvaver(poitsource_uvfits)
 
 #check antenna baseline data
-flag_ant = check_data(uvaver_file)#poitsource_uvfits)
+checked_flag_ant = check_data(uvaver_file)#poitsource_uvfits)
 
 #flag data test
 #antn = "TIA"
@@ -172,7 +172,7 @@ flag_ant = check_data(uvaver_file)#poitsource_uvfits)
 
 # target source imaging
 vis_file = './data/a17078a_M87.UVDATA.FITS'
-flag_ant = 'TIA'
+flag_ant = checked_flag_ant 
 clean_win_file = './data/kava2_selfcal0.5clean.win'
 target_source = 'M87' 
 difmap_imaging(vis_file=vis_file, out_dir='./data', flag_ant=flag_ant,
