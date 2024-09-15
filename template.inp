@@ -57,7 +57,7 @@ fits_file = a17078a.fits
 
 # freqid should *not* be set unless you have multiple freqids in the dataset.
 # In that case, select the freqid you want to process.
-#freqid = 1
+freqid = 1
 
 # averages default to 0
 avg = 0
