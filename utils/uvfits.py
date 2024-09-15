@@ -175,8 +175,12 @@ class UVFits:
         data = self.hdulist[0].data
         #test
         #print(data.par)
-        self.u_raw = data.par("UU---SIN")
-        self.v_raw = data.par("VV---SIN")
+        try:
+             self.u_raw = data.par("UU---SIN")
+             self.v_raw = data.par("VV---SIN")
+        except:
+             self.u_raw = data.par("UU")
+             self.v_raw = data.par("VV")
         self.dates1 = data.par(4)
         self.dates2 = data.par(5)
         self.inttime = data.par("INTTIM")
