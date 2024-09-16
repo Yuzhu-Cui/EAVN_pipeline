@@ -103,14 +103,17 @@ def difmap_imaging(vis_file, out_dir, flag_ant,
     difmap = subprocess.Popen("difmap", stdin=subprocess.PIPE, stdout=logfile)
     difmap.stdin.write(("obs " + vis_file + "\n").encode())
     difmap.stdin.write(("select ll" + "\n").encode()) 
+    # time average
     difmap.stdin.write(("uvave 30,true" + "\n").encode())
+    # start a point source model
     difmap.stdin.write(("startmod" + "\n").encode())
     difmap.stdin.write(("save %s/kava2_startmod" % out_dir + "\n").encode())
     difmap.stdin.write(("mapcolor color" + "\n").encode())
     difmap.stdin.write(("mapsize %d,%f" % (map_size,pixel_size) + "\n").encode())
     difmap.stdin.write(("flag %s" % flag_ant + "\n").encode())
     difmap.stdin.write(("save %s/kava2_flagtianma" % out_dir + "\n").encode())
-    #difmap.stdin.write(("uvw 0,-1" + "\n").encode())
+    # uniform weight
+    difmap.stdin.write(("uvw 0,-1" + "\n").encode())
     difmap.stdin.write(("save %s/kava2_phase" % out_dir + "\n").encode())
     difmap.stdin.write(("gscale" + "\n").encode())
     difmap.stdin.write(("save %s/kava2_gscaleclean" % out_dir + "\n").encode())
