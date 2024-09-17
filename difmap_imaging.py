@@ -4,8 +4,42 @@ import logging
 from utils.uvfits import *
 import os
 import matplotlib.pyplot as plt
+import optparse,re
 
 logfile = open("difmap.log", "w")
+
+def parse_inp(filename):
+    # form a hash of parameter names and values parsed from an input file.
+    # Don't worry about parameter types (lists, strings, etc.) as we sort that
+    # out after
+    INPUTFILE = open(filename, "r")
+    control = dict()
+
+    # a few useful regular expressions
+    newline = re.compile(r'\n')
+    space = re.compile(r'\s')
+    char = re.compile(r'\w')
+    comment = re.compile(r'#.*')
+
+    # parse the input file assuming '=' is used to separate names from values
+    for line in INPUTFILE:
+        if char.match(line):
+            line = comment.sub(r'', line)
+            line = line.replace("'", '')
+            (param, value) = line.split('=')
+
+            param = newline.sub(r'', param)
+            param = param.strip()
+            param = space.sub(r'', param)
+
+            value = newline.sub(r'', value)
+            value = value.strip()
+            value = space.sub(r'', value)
+            valuelist = value.split(',')
+            #print param,'=',valuelist
+            control[param] = valuelist
+    return control
+
 
 def uvaver(inputfile):
     if os.path.exists(os.path.splitext(inputfile)[0] + "_uvaver.uvf"):
@@ -46,11 +80,13 @@ def check_data(uvfile):
     ant2_n = np.array(ant2_n)
     ant_n_all = list(set(list(set(ant1_n)) + list(set(ant2_n))))
     print('Antennas: ', ant_n_all)
-    fig, ax = plt.subplots(1,1, figsize=(8,6))
+    fig, ax = plt.subplots(2,1, figsize=(8,12))
     colors = ['b', 'k', 'r', 'g', 'm', 'y', 'c']
     markers = ['o', '.', '^', '*', 'v', 's', 'D']
     amp_means = []
     amp_medians = []
+    phase_means = []
+    phase_medians = []
     for m,ant in enumerate(ant_n_all):
         ant1_bl, = np.where(ant1_n == ant)
         ant2_bl, = np.where(ant2_n == ant)
@@ -61,11 +97,18 @@ def check_data(uvfile):
         amp =  uv.amplitudes[ant_bl_final]
         amp_means.append(np.mean(amp))
         amp_medians.append(np.median(amp))
-        ax.scatter(bl, amp[:,0], marker=markers[m], label=ant, edgecolors=colors[m], color='') #, alpha=0.5)
-        #ax.scatter(uv.r[ant_bl_final], uv.amplitudes[ant_bl_final][:,0], '.', label=ant, color=colors[m])
-    ax.set_ylabel('Correlated flux density [Jy]')
-    ax.set_xlabel(r'Baseline length projection [M$\lambda$]')
-    plt.legend()
+        phase = uv.phases[ant_bl_final]
+        phase_means.append(np.mean(phase))
+        phase_medians.append(np.median(phase))
+        ax[0].scatter(bl, amp[:,0], marker=markers[m], label=ant, edgecolors=colors[m], color='') #, alpha=0.5)
+        ax[1].scatter(bl, phase[:,0], marker=markers[m], label=ant, edgecolors=colors[m], color='') #, alpha=0.5) 
+       #ax.scatter(uv.r[ant_bl_final], uv.amplitudes[ant_bl_final][:,0], '.', label=ant, color=colors[m])
+    ax[0].set_ylabel('Correlated flux density [Jy]')
+    ax[0].set_xlabel(r'Baseline length projection [M$\lambda$]')
+    ax[1].set_ylabel('Phases')
+    ax[1].set_xlabel(r'Baseline length projection [M$\lambda$]')    
+    ax[0].legend()
+    ax[1].legend()
     #print(os.path.basename(uvfile))
     plt.savefig('./data/radplot_check_%s.png' % os.path.basename(uvfile))
     plt.close(fig)
@@ -157,9 +200,28 @@ def difmap_imaging(vis_file, out_dir, flag_ant,
     difmap.communicate()
     print('imaging done!')
 
+
+# main function
+usage = 'usage: python3 %prog [options] imaging.inp'
+parser = optparse.OptionParser(usage=usage, version='%prog difmap2.5q')
+(options, args) = parser.parse_args()
+if len(args) != 1:
+    parser.error("incorrect number of arguments")
+
+
+
+control = parse_inp(args[0])
+outdir = control.get('outdir', [False])[0]
+poitsourceuvfits  = control.get('poitsourceuvfits', [])[0]
+visfile  = control.get('visfile', [])[0]
+cleanwinfile  = control.get('cleanwinfile', [])[0]
+targetsource = control.get('targetsource', [])[0]
+cleansigma = int(control['cleansigma'][0])
+mapsize = int(control['mapsize'][0])
+pixelsize = float(control.get('pixelsize', [0])[0])
 #1. strong point source processing
 #uv average 
-poitsource_uvfits = './data/a17078a_1219+044.UVDATA.FITS'
+poitsource_uvfits = poitsourceuvfits
 uvaver_file = uvaver(poitsource_uvfits)
 
 #check antenna baseline data
@@ -174,13 +236,13 @@ checked_flag_ant = check_data(uvaver_file)#poitsource_uvfits)
 #check_data(flag_file)
 
 # target source imaging
-vis_file = './data/a17078a_M87.UVDATA.FITS'
+vis_file = visfile
 flag_ant = checked_flag_ant 
-clean_win_file = './data/kava2_selfcal0.5clean.win'
-target_source = 'M87' 
-difmap_imaging(vis_file=vis_file, out_dir='./data', flag_ant=flag_ant,
-                   clean_sigma=1,
-                   map_size=2048,
-                   pixel_size=0.02,
-                   clean_win_file=clean_win_file, target_name=target_source)
+clean_win_file = cleanwinfile 
+target_source = targetsource
+difmap_imaging(vis_file=vis_file, out_dir=outdir, flag_ant=flag_ant,
+                   clean_sigma=cleansigma,
+                   map_size=mapsize,
+                   pixel_size=pixelsize,
+                   clean_win_file=cleanwinfile, target_name=targetsource)
 

@@ -1,0 +1,26 @@
+# -----------------------------------------------
+# required parameters
+
+# strong point source uvfits file
+poitsourceuvfits = ./data/a17078a_1219+044.UVDATA.FITS
+
+# target source uvfits file
+visfile = ./data/a17078a_M87.UVDATA.FITS
+
+# win file in CLEAN step 
+cleanwinfile = ./data/kava2_selfcal0.5clean.win
+
+# target source name for the name in save clean map 
+targetsource = 'M87'
+
+# out directory
+outdir = ./data
+
+# map size 
+mapsize = 2048
+
+# pixel size       
+pixelsize = 0.02
+
+#clean sigma 
+cleansigma = 1
