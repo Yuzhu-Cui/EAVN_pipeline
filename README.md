@@ -21,7 +21,7 @@ ParselTongue EAVN.py template.inp
 ```
 - imaging
 ```
-python3 difmap_imaging.py
+python3 difmap_imaging.py imaging.inp
 ```
 
 ## Credits
