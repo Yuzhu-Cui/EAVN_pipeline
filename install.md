@@ -65,6 +65,12 @@ wget ftp://ftp.astro.caltech.edu/pub/pgplot/pgplot5.2.tar.gz
 ```
 wget ftp://ftp.astro.caltech.edu/pub/difmap/difmap2.5q.tar.gz
 ```
+- pre-install
+```
+export PGPLOT_LIB="-L/pgplot5.2_lib_dir -L/X11_lib_dir \
+
+    -Xlinker -R/pgplot5.2_lib_dir:X11_lib_dir -lpgplot -lX11"
+```
 - install
 ```
 ./configure linux-i486-gcc
@@ -94,4 +100,26 @@ chmod +x Anaconda3-2021.05-Linux-x86_64.sh
 conda install -c kettenis parseltongue 
 ```
 
+# Set environment
+## example
+```
+#aips
+export AIPS_ROOT=/media/hero/Intel6/EAVN/software/AIPS
+source $AIPS_ROOT/LOGIN.SH
 
+#pgplot
+export PATH=/media/hero/Intel6/mwa_software/pgplot:$PATH
+export PGPLOT_DIR=/media/hero/Intel6/mwa_software/pgplot
+export LD_LIBRARY_PATH=/media/hero/Intel6/mwa_software/pgplot:$LD_LIBRARY_PATH
+export PGPLOT_FONT=/media/hero/Intel6/mwa_software/pgplot/grfont.dat
+export PGPLOT_DEV=/xwine
+export PGPLOT_LIB="-L /usr/lib/x86_64-linux-gnu -lX11 -L /media/hero/Intel6/mwa_software/pgplot -lpgplot"
+
+export PATH=/media/hero/Intel6/EAVN/software/uvf_difmap_2.5q:$PATH
+export LD_LIBRARY_PATH=/media/hero/Intel6/EAVN/software/uvf_difmap_2.5q/lib:$LD_LIBRARY_PATH
+export CPATH=/media/hero/Intel6/EAVN/software/uvf_difmap_2.5q/inlcude:$CPATH
+
+#anaconda3
+export PATH=/media/hero/Intel6/EAVN/software/anaconda3/bin:$PATH
+
+```
