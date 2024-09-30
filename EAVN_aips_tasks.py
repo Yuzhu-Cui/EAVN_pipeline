@@ -30,18 +30,44 @@ FuncLog = sys.stdout
 my_tv = AIPSTV()
 
 
-def runfitld(outdata, infile, nfits=1):
+def runfitld(outdata, infile, nfits=1, cltablemin = 1./60., wtthreshhold=0, interferometer='EAVN'):
 
     """Must set outdata, infile"""
     #assert (outdata != None, infile != None), "set indata, infile in runfitld"
     logger.info('Task FITLD  (release of 31DEC24) begins') 
-    fitld = AIPSTask('fitld')
-    fitld.outdata = outdata
-    fitld.ncount = nfits
-    fitld.douvcomp = -1
-    fitld.doconcat = -1
-    fitld.clint = 1./60.
-    fitld.digicor = -1
+    fitld = AIPSTask('fitld') 
+    if interferometer == 'EAVN':
+       fitld.outdata = outdata
+       fitld.ncount = nfits
+       fitld.douvcomp = -1
+       fitld.doconcat = -1
+       fitld.clint = cltablemin
+       fitld.digicor = -1
+    elif interferometer == 'VLBA':
+       fitld.doconcat = 0
+       fitld.doweight = 1
+       fitld.optype = ''
+       fitld.optype = ''
+       fitld.dotable = 1
+       fitld.douvcomp = 1
+       fitld.qual = -1
+       fitld.bchan = 0
+       fitld.echan = 0
+       fitld.bif = 0
+       fitld.eif = 0
+       fitld.clint = cltablemin
+       fitld.digicor = 1
+       fitld.wtthresh = wtthreshhold
+       fitld.outdata = outdata
+       fitld.antname[1] = 'VLBA'
+    elif interferometer == 'EVN':
+       fitld.outdata = outdata
+       fitld.ncount = nfits
+       fitld.douvcomp = 1
+       fitld.doconcat = 1
+       fitld.clint = cltablemin #.25
+    else:
+       raise ValueError('Please input the correct interferometer name: EAVN, VLAB or EVN!')
     try:
         fitld.datain = infile
     except AttributeError:
@@ -62,11 +88,18 @@ def runmsort(indata, outdata):
     msort()   
     logger.info('Task MSORT appears to have ended successfully')
 
-def runindxr(indata):
+def runindxr(indata, interferometer='EAVN'):
     logger.info('Task INDXR  (release of 31DEC24) begins')
     indxr = AIPSTask('indxr')
     indxr.indata = indata
-    indxr.cparm[1:] = [0, 0, 1./60.,0]
+    if interferometer=='EAVN':
+       indxr.cparm[1:] = [0, 0, 1./60.,0]
+    elif interferometer=='VLBA':
+       indxr.cparm[1:] = [0, 0, 10./60.,0]
+    elif interferometer=='EVN':
+       indxr.cparm[1:] = [0, 22, .25]
+    else:
+       raise ValueError('Please input the correct interferometer name: EAVN, VLAB or EVN!')
     indxr()   
     logger.info('Task INDXR appears to have ended successfully')
 
@@ -272,12 +305,12 @@ def is_aipsdata(aipsdata):
 
     return got_attr
 
-def runaccor(indata):
+def runaccor(indata, solint):
     logger.info('Task ACCOR  (release of 31DEC24) begins')
     accor = AIPSTask('ACCOR')
     accor.indata = indata
     #accor.timer[1:] = [0]
-    accor.solint = -1
+    accor.solint = solint #-1
     accor()
     logger.info('Task ACCOR appears to have ended successfully')
 

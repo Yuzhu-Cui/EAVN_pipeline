@@ -47,7 +47,7 @@ def checkin(control):
     global bpass_calibrators, phaseref_sources, target_sources, avg, plotavg
     global tmask, fitsdir, fits_file, nselfcal, doplot, msgkill
     global source_select, experiment_dir, output_prefix, nbp_table, fring_snr
-    global disk, freqid, dopng, rmcalsour, fit_ant
+    global disk, freqid, dopng, rmcalsour, fit_ant, interferometer
 
     EAVN_aips_tasks.AIPSTask.version = control['version']['default']
     EAVN_aips_tasks.task_versions = control['version']
@@ -55,6 +55,8 @@ def checkin(control):
     experiment = control['experiment'][0].lower()
     # remove the pass number from the experiment name if required
     experiment_dir = get_experiment_dir(experiment)
+
+    interferometer = control['interferometer'][0] 
 
     refantnames = control['refant']
     for i in range(len(refantnames)):
@@ -244,7 +246,7 @@ def save_fits_image(data, name):
     save_old_file(fitsoutfile)
     runfittp(indata=data, outfile=fitsoutfile)
 
-def EAVN_load(uvdata, msortdata):
+def EAVN_load(uvdata, msortdata, cltablemin, wtthreshhold, interferometer):
     # load the data then sort, vbglu and uvavg if required.
 
     # first zap any of the 'load' files from a previous run (in case the names
@@ -252,10 +254,12 @@ def EAVN_load(uvdata, msortdata):
     # number of heads)
     zap_old_data(uvdata)
     zap_old_data(msortdata)
-
+    zap_old_data(uvcopdata)
+    zap_old_data(uvavgdata)
+    
     global nfits
     uvdata, headdata = load_data(uvdata, msortdata, experiment, fitsdir,
-            fits_file, heads, nfits)
+            fits_file, heads, nfits, cltablemin, wtthreshhold, interferometer)
 
     # and run VBGLU if necessary
     if len(heads) > 1:
@@ -362,7 +366,13 @@ def EAVN_ampcal(antab_file, uvdata):
     uvdata.zap_table('AIPS GC', -1)
 
     #run ACCOR --> SN 1
-    runaccor(uvdata)    
+    if interferometer == 'EAVN':
+       solint = -1
+    elif interferometer == 'VLBA':
+       solint = -2
+    else:
+       solint = 0 
+    runaccor(uvdata, solint)    
     uvdata.zap_table('AIPS PL', -1)
     runsnplt(uvdata, 'SN', 1, 'AMP') 
     plot(uvdata, def_name('SN1'), dopng=dopng)
@@ -493,18 +503,22 @@ control = parse_inp(args[0])
 # check the inputs and re-type where necessary
 checkin(control)
 
-# get some necessary files assuming standard names
-antab_file = getfile('antab')
-assert(os.path.isfile(antab_file)), antab_file + ' does not exist!'
+if interferometer == 'EAVN' or interferometer == 'EVN':
+   # get some necessary files assuming standard names
+   antab_file = getfile('antab')
+   assert(os.path.isfile(antab_file)), antab_file + ' does not exist!'
 
+uvcopklass = 'FQ' + str(freqid)
 uvname = experiment.upper()
 uvdata = AIPSUVData(uvname, 'UVDATA', disk, 1)
 msortdata = AIPSUVData(uvdata.name, 'MSORT', uvdata.disk, 1)
+uvcopdata = AIPSUVData(uvdata.name, uvcopklass, uvdata.disk, 1)
+uvavgdata = AIPSUVData(uvdata.name, 'UVAVG', uvdata.disk, 1)
 
 # 1, Load and sort the data - average too if requested
 if tmask[0] <= 1 <= tmask[1]:
     logger.info('Starting tmask 1: load and sort the data')
-    EAVN_load(uvdata, msortdata)
+    EAVN_load(uvdata, msortdata, 1./60., 0, interferometer)
     logger.info('Ending tmask 1')
 
 # Always do this bit to make sure names are right at end of block. The order of

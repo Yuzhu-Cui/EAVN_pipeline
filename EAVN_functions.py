@@ -496,7 +496,7 @@ def glue_data(headdata, vbgludata, fxpoldata=None):
 
 
 def load_data(uvdata, msortdata, experiment, fitsdir, fits_file=None, heads=[],
-        nfits=None):
+        nfits=None, cltablemin = 1./60., wtthreshhold=0, interferometer='EAVN'):
     uvname = uvdata.name
     #head_klass = []
     headdata = ['' for i in range(4)]
@@ -525,7 +525,7 @@ def load_data(uvdata, msortdata, experiment, fitsdir, fits_file=None, heads=[],
             raise 'No fits files were found matching: ' + infile
 
         logger.info('Loading %d pieces of %s' % (nfits, infile))
-        runfitld(infile=infile, outdata=uvdata, nfits=nfits)
+        runfitld(infile=infile, outdata=uvdata, nfits=nfits, cltablemin=cltablemin, wtthreshhold=wtthreshhold, interferometer=interferometer)
 
         # sort the data if necessary
         if (not uvdata.header.sortord == 'TB'):
@@ -537,7 +537,7 @@ def load_data(uvdata, msortdata, experiment, fitsdir, fits_file=None, heads=[],
             uvdata = msortdata
 
         # run indxr now we are sure the data are 'TB' sorted
-        runindxr(uvdata)
+        runindxr(uvdata, interferometer)
 
         headdata[i] = AIPSUVData(uvname + '_' + str(headnum),
                     head_klass, uvdata.disk, uvdata.seq)
