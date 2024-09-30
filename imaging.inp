@@ -8,7 +8,7 @@ poitsourceuvfits = ./data/a17078a_1219+044.UVDATA.FITS
 visfile = ./data/a17078a_M87.UVDATA.FITS
 
 # win file in CLEAN step 
-cleanwinfile = ./data/kava2_selfcal0.5clean.win
+cleanwinfile = ./data/origin.win
 
 # target source name for the name in save clean map 
 targetsource = 'M87'
@@ -23,4 +23,4 @@ mapsize = 2048
 pixelsize = 0.02
 
 #clean sigma 
-cleansigma = 1
+cleansigma = 8

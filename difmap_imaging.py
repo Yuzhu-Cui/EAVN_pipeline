@@ -5,8 +5,36 @@ from utils.uvfits import *
 import os
 import matplotlib.pyplot as plt
 import optparse,re
+from astropy.io import fits
+from astropy import wcs
+import aplpy 
+import numpy as np
 
 logfile = open("difmap.log", "w")
+
+
+def plot_cleanimage(fitsfile):
+    hdu= fits.open(fitsfile)[0]
+    data = hdu.data[:,:]
+    img = hdu.data[:,:]
+    img = np.nan_to_num(img)
+    w1=wcs.WCS(hdu.header, naxis=2)
+    temp = fits.PrimaryHDU(data=data, header=w1.to_header())   
+
+    rms =0.9* np.median(abs(img-np.median(img)))
+
+    f=aplpy.FITSFigure(temp, slices=[0])
+    f.show_colorscale(cmap='gray_r')
+
+    levs_positive = 5*rms*np.array([1,np.sqrt(2),2,np.sqrt(2)*2,4,4*np.sqrt(2),8,8*np.sqrt(2),16,16*np.sqrt(2),32,32*np.sqrt(2),64,64*np.sqrt(2),128,128*np.sqrt(2),256,256*np.sqrt(2)])
+    levs_negative = 3*rms*np.array([-1])    
+    f.show_contour(img,dimensions=[0,1],colors='magenta',zorder=5,levels=levs_positive,slices=[0]) 
+    f.axis_labels.set_xtext('Right Ascension (J2000)')
+    f.axis_labels.set_ytext('Declination (J2000)')
+    f.axis_labels.set_font(size=24, weight='medium', stretch='normal', family='sans-serif', style='normal', variant='normal')
+    plt.tick_params(axis='both',direction='in',color='black', labelsize=14)
+    f.tick_labels.set_font(size=20, weight='medium', stretch='normal', family='sans-serif', style='normal', variant='normal')
+    f.save(fitsfile.replace('.fits', '.png'))
 
 def parse_inp(filename):
     # form a hash of parameter names and values parsed from an input file.
@@ -158,10 +186,20 @@ def difmap_imaging(vis_file, out_dir, flag_ant,
     # uniform weight
     difmap.stdin.write(("uvw 0,-1" + "\n").encode())
     difmap.stdin.write(("save %s/kava2_phase" % out_dir + "\n").encode())
+    difmap.stdin.write(("rwin %s" % clean_win_file + "\n").encode())
+    difmap.stdin.write(("clean 1000,0.01" + "\n").encode())
+    #peakwin 1.5;
+    difmap.stdin.write(("if(peak(flux,max)/imstat(rms) > %d) repeat; clean; selfcal;  until(peak(flux,max)/imstat(rms) < %d) end if" % (clean_sigma, clean_sigma) + "\n").encode())
+    difmap.stdin.write(("save  %s/be_gscaleclean" % out_dir + "\n").encode())
     difmap.stdin.write(("gscale" + "\n").encode())
+    difmap.stdin.write(("clrmod true" + "\n").encode())
+    #peakwin 1.5;
+    difmap.stdin.write(("if(peak(flux,max)/imstat(rms) > %d) repeat; clean; selfcal;  until(peak(flux,max)/imstat(rms) < %d) end if" % (clean_sigma, clean_sigma) + "\n").encode())
     difmap.stdin.write(("save %s/kava2_gscaleclean" % out_dir + "\n").encode())
     for i in [120, 60, 20, 10, 6, 3, 1, 0.5]:
         difmap.stdin.write(("selfcal true,true,%s" % i + "\n").encode())
+        difmap.stdin.write(("clrmod true" + "\n").encode())
+        difmap.stdin.write(("if(peak(flux,max)/imstat(rms) > %d) repeat; clean; selfcal;  until(peak(flux,max)/imstat(rms) < %d) end if" % (clean_sigma, clean_sigma) + "\n").encode())
         difmap.stdin.write(("save %s/kava2_selfcal%sclean" % (out_dir, i) + "\n").encode())
     difmap.stdin.write(("print imstat(rms)" + "\n").encode())
     difmap.stdin.write(("unflag %s" % flag_ant + "\n").encode())
@@ -174,14 +212,18 @@ def difmap_imaging(vis_file, out_dir, flag_ant,
     #clean-selfcal calibration:
     difmap.stdin.write(("rwin %s" % clean_win_file + "\n").encode())
     difmap.stdin.write(("clean 1000,0.01" + "\n").encode())
-    difmap.stdin.write(("if(peak(flux,max)/imstat(rms) > 3) repeat; peakwin 1.5; clean; selfcal;  until(peak(flux,max)/imstat(rms) < 3) end if" + "\n").encode())
+    difmap.stdin.write(("if(peak(flux,max)/imstat(rms) > %d) repeat; clean; selfcal;  until(peak(flux,max)/imstat(rms) < %d) end if" % (clean_sigma, clean_sigma) + "\n").encode())
 
     difmap.stdin.write(("gscale" + "\n").encode())
+    difmap.stdin.write(("clrmod true" + "\n").encode())
+    difmap.stdin.write(("if(peak(flux,max)/imstat(rms) > %d) repeat; clean; selfcal;  until(peak(flux,max)/imstat(rms) < %d) end if" % (clean_sigma, clean_sigma) + "\n").encode())
     difmap.stdin.write(("save %s/tian2_flagisggscale" % out_dir + "\n").encode())
 
 
     for i in [120, 60, 30, 15, 6, 3, 1, 0.5]:
         difmap.stdin.write(("selfcal true,true,%s" % i + "\n").encode())
+        difmap.stdin.write(("clrmod true" + "\n").encode())
+        difmap.stdin.write(("if(peak(flux,max)/imstat(rms) > %d) repeat; clean; selfcal;  until(peak(flux,max)/imstat(rms) < %d) end if" % (clean_sigma, clean_sigma) + "\n").encode())
         difmap.stdin.write(("save %s/tian2_flagisgselfcal%sclean" % (out_dir, i) + "\n").encode())
  
 
@@ -191,8 +233,9 @@ def difmap_imaging(vis_file, out_dir, flag_ant,
     difmap.stdin.write(("mapl" + "\n").encode())
     difmap.stdin.write(("mapcolor color" + "\n").encode())
     difmap.stdin.write(("cmul=3*imstat(rms)" + "\n").encode())
+    difmap.stdin.write(("levs=-1,1.00,1.41,2.00,2.83,4.00,5.65,7.99,11.30,15.98,22.60,31.95,45.18,63.88,90.33,127.73,180.61,255.38,361.11,510.61,722.00,1020.91,1443.57" + "\n").encode())
     #Save image
-    difmap.stdin.write(("device %s/%s.ps/vps" % (out_dir,target_name) + "\n").encode())
+    difmap.stdin.write(("device %s/%s.ps/vcps" % (out_dir,target_name) + "\n").encode())
     difmap.stdin.write(("mapl cln" + "\n").encode())    
     difmap.stdin.write(("print \"MARKING_STRING\";print peak(flux);print imstat(rms);print cmul;print imstat(bmin);print imstat(bmaj);print imstat(bpa);print \"END_MARKING\"" + "\n").encode())
     difmap.stdin.write(("save %s/%s" % (out_dir, target_name) + "\n").encode())
@@ -246,3 +289,5 @@ difmap_imaging(vis_file=vis_file, out_dir=outdir, flag_ant=flag_ant,
                    pixel_size=pixelsize,
                    clean_win_file=cleanwinfile, target_name=targetsource)
 
+#os.system('ps2pdf ./data/%.ps')
+plot_cleanimage('./data/%s.fits' % targetsource)
