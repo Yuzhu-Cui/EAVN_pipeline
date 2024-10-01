@@ -22,5 +22,8 @@ mapsize = 2048
 # pixel size       
 pixelsize = 0.02
 
+# clean gain
+clean_gain = 1.0
+
 #clean sigma 
 cleansigma = 8

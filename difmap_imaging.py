@@ -166,31 +166,38 @@ def flag_data(inputfile, antn):
 
 
 def difmap_imaging(vis_file, out_dir, flag_ant,
+                   clean_gain,
                    clean_sigma,
                    map_size,
                    pixel_size,
                    clean_win_file, target_name):
     print('Start imaging processing ... ...')    	
     difmap = subprocess.Popen("difmap", stdin=subprocess.PIPE, stdout=logfile)
+    print('read data')
     difmap.stdin.write(("obs " + vis_file + "\n").encode())
+    print('select data')
     difmap.stdin.write(("select ll" + "\n").encode()) 
     # time average
+    print('uv average')
     difmap.stdin.write(("uvave 30,true" + "\n").encode())
     # start a point source model
     difmap.stdin.write(("startmod" + "\n").encode())
     difmap.stdin.write(("save %s/kava2_startmod" % out_dir + "\n").encode())
     difmap.stdin.write(("mapcolor color" + "\n").encode())
     difmap.stdin.write(("mapsize %d,%f" % (map_size,pixel_size) + "\n").encode())
+    print('flag bad antenna')
     difmap.stdin.write(("flag %s" % flag_ant + "\n").encode())
     difmap.stdin.write(("save %s/kava2_flagtianma" % out_dir + "\n").encode())
     # uniform weight
     difmap.stdin.write(("uvw 0,-1" + "\n").encode())
     difmap.stdin.write(("save %s/kava2_phase" % out_dir + "\n").encode())
     difmap.stdin.write(("rwin %s" % clean_win_file + "\n").encode())
-    difmap.stdin.write(("clean 1000,0.01" + "\n").encode())
+    print('clean ...')
+    difmap.stdin.write(("clean 1000,%f" % clean_gain+ "\n").encode())
     #peakwin 1.5;
     difmap.stdin.write(("if(peak(flux,max)/imstat(rms) > %d) repeat; clean; selfcal;  until(peak(flux,max)/imstat(rms) < %d) end if" % (clean_sigma, clean_sigma) + "\n").encode())
     difmap.stdin.write(("save  %s/be_gscaleclean" % out_dir + "\n").encode())
+    print('gscale ...')
     difmap.stdin.write(("gscale" + "\n").encode())
     difmap.stdin.write(("clrmod true" + "\n").encode())
     #peakwin 1.5;
@@ -210,8 +217,9 @@ def difmap_imaging(vis_file, out_dir, flag_ant,
     difmap.stdin.write(("save %s/tian2_recovertianma" % out_dir + "\n").encode())
     #difmap.stdin.write(("rmod tian2_recovertianma.mod" + "\n").encode())
     #clean-selfcal calibration:
+    
     difmap.stdin.write(("rwin %s" % clean_win_file + "\n").encode())
-    difmap.stdin.write(("clean 1000,0.01" + "\n").encode())
+    difmap.stdin.write(("clean 1000,%f" % clean_gain+ "\n").encode())
     difmap.stdin.write(("if(peak(flux,max)/imstat(rms) > %d) repeat; clean; selfcal;  until(peak(flux,max)/imstat(rms) < %d) end if" % (clean_sigma, clean_sigma) + "\n").encode())
 
     difmap.stdin.write(("gscale" + "\n").encode())
@@ -226,6 +234,25 @@ def difmap_imaging(vis_file, out_dir, flag_ant,
         difmap.stdin.write(("if(peak(flux,max)/imstat(rms) > %d) repeat; clean; selfcal;  until(peak(flux,max)/imstat(rms) < %d) end if" % (clean_sigma, clean_sigma) + "\n").encode())
         difmap.stdin.write(("save %s/tian2_flagisgselfcal%sclean" % (out_dir, i) + "\n").encode())
  
+
+    #test open all antenna
+    difmap.stdin.write(("selfant ,false,1" + "\n").encode())
+    difmap.stdin.write(("save %s/tian2_openkava" % out_dir + "\n").encode())
+    difmap.stdin.write(("rwin %s" % clean_win_file + "\n").encode())
+    difmap.stdin.write(("clean 1000,%f" % clean_gain+ "\n").encode())
+    difmap.stdin.write(("if(peak(flux,max)/imstat(rms) > %d) repeat; clean; selfcal;  until(peak(flux,max)/imstat(rms) < %d) end if" % (clean_sigma, clean_sigma) + "\n").encode())
+
+    difmap.stdin.write(("gscale" + "\n").encode())
+    difmap.stdin.write(("clrmod true" + "\n").encode())
+    difmap.stdin.write(("if(peak(flux,max)/imstat(rms) > %d) repeat; clean; selfcal;  until(peak(flux,max)/imstat(rms) < %d) end if" % (clean_sigma, clean_sigma) + "\n").encode())
+    difmap.stdin.write(("save %s/tian2_opengscale" % out_dir + "\n").encode())
+
+
+    for i in [120, 60, 30, 15, 6, 3, 1, 0.5]:
+        difmap.stdin.write(("selfcal true,true,%s" % i + "\n").encode())
+        difmap.stdin.write(("clrmod true" + "\n").encode())
+        difmap.stdin.write(("if(peak(flux,max)/imstat(rms) > %d) repeat; clean; selfcal;  until(peak(flux,max)/imstat(rms) < %d) end if" % (clean_sigma, clean_sigma) + "\n").encode())
+        difmap.stdin.write(("save %s/tian2_openselfcal%sclean" % (out_dir, i) + "\n").encode())
 
     difmap.stdin.write(("print imstat(rms)" + "\n").encode())
     difmap.stdin.write(("delwin" + "\n").encode())
@@ -259,6 +286,7 @@ poitsourceuvfits  = control.get('poitsourceuvfits', [])[0]
 visfile  = control.get('visfile', [])[0]
 cleanwinfile  = control.get('cleanwinfile', [])[0]
 targetsource = control.get('targetsource', [])[0]
+cleangain = float(control.get('clean_gain', [])[0])
 cleansigma = int(control['cleansigma'][0])
 mapsize = int(control['mapsize'][0])
 pixelsize = float(control.get('pixelsize', [0])[0])
@@ -284,6 +312,7 @@ flag_ant = checked_flag_ant
 clean_win_file = cleanwinfile 
 target_source = targetsource
 difmap_imaging(vis_file=vis_file, out_dir=outdir, flag_ant=flag_ant,
+                   clean_gain = cleangain,
                    clean_sigma=cleansigma,
                    map_size=mapsize,
                    pixel_size=pixelsize,
