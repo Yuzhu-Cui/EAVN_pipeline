@@ -13,6 +13,17 @@ import numpy as np
 logfile = open("difmap.log", "w")
 
 
+def get_latest_log(log_dir):
+    latest_log = None
+    latest_mtime = 0
+    for filename in os.listdir(log_dir):
+        if filename.endswith('.log'):
+            file_path = os.path.join(log_dir, filename)
+            if os.path.getmtime(file_path) > latest_mtime:
+                latest_mtime = os.path.getmtime(file_path)
+                latest_log = filename
+    return latest_log
+
 def plot_cleanimage(fitsfile):
     hdu= fits.open(fitsfile)[0]
     data = hdu.data[:,:]
