@@ -139,12 +139,15 @@ def check_data(uvfile):
         phase = uv.phases[ant_bl_final]
         phase_means.append(np.mean(phase))
         phase_medians.append(np.median(phase))
-        ax[0].scatter(bl, amp[:,0], marker=markers[m], label=ant, edgecolors=colors[m], color='') #, alpha=0.5)
-        ax[1].scatter(bl, phase[:,0], marker=markers[m], label=ant, edgecolors=colors[m], color='') #, alpha=0.5) 
+        bl = bl.reshape((1, bl.size)).repeat(8, axis=0).reshape((bl.size * 8,))
+        amp = amp.flatten()
+        phase = phase.flatten() /np.pi * 180.0
+        ax[0].scatter(bl, amp, marker=markers[m], label=ant, edgecolors=colors[m], color='') #, alpha=0.5)
+        ax[1].scatter(bl, phase, marker=markers[m], label=ant, edgecolors=colors[m], color='') #, alpha=0.5) 
        #ax.scatter(uv.r[ant_bl_final], uv.amplitudes[ant_bl_final][:,0], '.', label=ant, color=colors[m])
     ax[0].set_ylabel('Correlated flux density [Jy]')
     ax[0].set_xlabel(r'Baseline length projection [M$\lambda$]')
-    ax[1].set_ylabel('Phases')
+    ax[1].set_ylabel('Phases [deg]')
     ax[1].set_xlabel(r'Baseline length projection [M$\lambda$]')    
     ax[0].legend()
     ax[1].legend()
