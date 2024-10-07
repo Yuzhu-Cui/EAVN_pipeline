@@ -544,4 +544,32 @@ def load_data(uvdata, msortdata, experiment, fitsdir, fits_file=None, heads=[],
 
     return uvdata, headdata
 
+# Get the day of year from the Year, month, day
+def get_day_of_year(year, month, day):
+    """Get the day-of-year integer from the year/month/day
 
+    year   I  YYYY
+    month  I  MM starting from January == 1
+    day    I  DD starting from 1 == 1
+    """
+    day_of_year_list = [0,31,59,90,120,151,181,212,243,273,304,334]
+    doy = day_of_year_list[month-1] + day
+    if(month>2):
+        if((year&0x3)==0):
+            if((year % 100 != 0) or (year % 400 == 0)):
+                doy = doy+1
+    return doy
+
+# Get the day of year from the Year, month, day for the start of observations
+def get_observation_year_month_day(uvdata):
+    date_string = uvdata.header.date_obs
+    date_list = date_string.split('-')
+    year = int(date_list[0])
+    month = int(date_list[1])
+    day = int(date_list[2])
+    return (year, month, day)
+
+# Get the day of year from the Year, month, day for the start of observations
+def get_observation_day_of_year(uvdata):
+    (year, month, day) = get_observation_year_month_day(uvdata)
+    return get_day_of_year(year, month, day)

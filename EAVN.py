@@ -280,6 +280,43 @@ def EAVN_load(uvdata, msortdata, cltablemin, wtthreshhold, interferometer):
         runindxr(uvavgdata)
         uvdata = uvavgdata
 
+def EAVN_flag(uvdata):
+    # Delete any old flag tables.
+    uvdata.zap_table('AIPS FG', -1)
+
+    try:
+        #uvflg.infile = uvflg_file
+        logger.info("flagging using file: %s" % uvflg_file)
+        runuvflg(indata=uvdata, infile=uvflg_file)
+    except:
+        raise "uvflg failed, check " + uvflg_file + " is o.k.!"
+
+    # run vlog if necessary
+    doglobal, vlba_missing = vlba_logs(uvdata, vlog_out, vlbacal_file,
+            ifwidth)
+
+    # run uvflg for any VLBA antennas.
+    if doglobal:
+        vlba_uvflg_file = vlog_out + '.FLAG'
+        try:
+            logger.info("flagging VLBAs using file: %s" % vlba_uvflg_file)
+            runuvflg(indata=uvdata, infile=vlba_uvflg_file)
+        except:
+            raise "uvflg failed, check " + vlba_uvflg_file + " is o.k.!"
+
+
+    if os.path.exists(chflg_file):
+        runuvflg(indata=uvdata, infile=chflg_file)
+    else:
+        # flag the edge channels if no chflag file given
+        logger.info(chflg_file + " is missing")
+
+        nflag = min(nchan//16, 8)
+        logger.info('Flagging outer %d' %s nflag + 'channels instead')
+        reason = 'subband edge'
+        runuvflg(indata=uvdata, bchan=0, echan=nflag, reason=reason)
+        runuvflg(indata=uvdata, bchan=nchan+1-nflag, echan=nchan, reason=reason)
+
 def EAVN_plot1():
     # scan list
     outfile = output_prefix + '.SCAN'
@@ -502,6 +539,10 @@ control = parse_inp(args[0])
 
 # check the inputs and re-type where necessary
 checkin(control)
+
+if interferometer == 'VLBA' or interferometer == 'EVN':
+   uvflg_file = getfile('uvflg')
+   assert(os.path.isfile(uvflg_file)), uvflg_file + ' does not exist!'
 
 if interferometer == 'EAVN' or interferometer == 'EVN':
    # get some necessary files assuming standard names

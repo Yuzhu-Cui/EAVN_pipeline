@@ -35,11 +35,11 @@ def plot_cleanimage(fitsfile):
     rms =0.9* np.median(abs(img-np.median(img)))
 
     f=aplpy.FITSFigure(temp, slices=[0])
-    f.show_colorscale(cmap='gray_r')
+    #f.show_colorscale(cmap='gray')
 
     levs_positive = 5*rms*np.array([1,np.sqrt(2),2,np.sqrt(2)*2,4,4*np.sqrt(2),8,8*np.sqrt(2),16,16*np.sqrt(2),32,32*np.sqrt(2),64,64*np.sqrt(2),128,128*np.sqrt(2),256,256*np.sqrt(2)])
     levs_negative = 3*rms*np.array([-1])    
-    f.show_contour(img,dimensions=[0,1],colors='magenta',zorder=5,levels=levs_positive,slices=[0]) 
+    f.show_contour(img,dimensions=[0,1],colors='k',zorder=5,levels=levs_positive,slices=[0]) 
     f.axis_labels.set_xtext('Right Ascension (J2000)')
     f.axis_labels.set_ytext('Declination (J2000)')
     f.axis_labels.set_font(size=24, weight='medium', stretch='normal', family='sans-serif', style='normal', variant='normal')
@@ -232,7 +232,7 @@ def difmap_imaging(vis_file, out_dir, flag_ant,
     #difmap.stdin.write(("rmod tian2_recovertianma.mod" + "\n").encode())
     #clean-selfcal calibration:
     
-    difmap.stdin.write(("rwin %s" % clean_win_file + "\n").encode())
+    #difmap.stdin.write(("rwin %s" % clean_win_file + "\n").encode())
     difmap.stdin.write(("clean 1000,%f" % clean_gain+ "\n").encode())
     difmap.stdin.write(("if(peak(flux,max)/imstat(rms) > %d) repeat; clean; selfcal;  until(peak(flux,max)/imstat(rms) < %d) end if" % (clean_sigma, clean_sigma) + "\n").encode())
 
@@ -252,7 +252,7 @@ def difmap_imaging(vis_file, out_dir, flag_ant,
     #test open all antenna
     difmap.stdin.write(("selfant ,false,1" + "\n").encode())
     difmap.stdin.write(("save %s/tian2_openkava" % out_dir + "\n").encode())
-    difmap.stdin.write(("rwin %s" % clean_win_file + "\n").encode())
+    #difmap.stdin.write(("rwin %s" % clean_win_file + "\n").encode())
     difmap.stdin.write(("clean 1000,%f" % clean_gain+ "\n").encode())
     difmap.stdin.write(("if(peak(flux,max)/imstat(rms) > %d) repeat; clean; selfcal;  until(peak(flux,max)/imstat(rms) < %d) end if" % (clean_sigma, clean_sigma) + "\n").encode())
 

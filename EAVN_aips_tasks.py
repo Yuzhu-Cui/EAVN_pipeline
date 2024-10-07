@@ -521,7 +521,7 @@ def runfittp(indata, outfile):
     """Must set indata, outfile"""
     #assert (outfile != None), 'set outfile in runfittp'
 
-    fittp = AIPSTask ('fittp')
+    fittp = AIPSTask('fittp')
     fittp.indata = indata
     #fittp.doall = -1
     #fittp.intype = ''
@@ -530,4 +530,69 @@ def runfittp(indata, outfile):
         fittp.dataout = outfile
     except AttributeError:
         fittp.outfile = outfile
-    fittp()    
+    fittp()   
+
+def runtecor(indata, doy, num_days, processing_option, gainver, gainuse, dirname):
+    group_name = ''
+    if(processing_option == 'IO_COD'):
+        group_name='cod'
+    elif(processing_option == 'IO_COR'):
+        group_name='cor'
+    elif(processing_option == 'IO_ESA'):
+        group_name='esa'
+    elif(processing_option == 'IO_ESR'):
+        group_name='esr'
+    elif(processing_option == 'IO_IGR'):
+        group_name='igr'
+    elif(processing_option == 'IO_IGS'):
+        group_name='igs'
+    elif(processing_option == 'IO_JPL'):
+        group_name='jpl'
+    elif(processing_option == 'IO_JPR'):
+        group_name='jpr'
+    elif(processing_option == 'IO_UPC'):
+        group_name='upc'
+    elif(processing_option == 'IO_UPR'):
+        group_name='upr'
+    else:
+        raise RuntimeError, "unknown ionosphere processing option " + processing_option._str__()
+    year = indata.header.date_obs[2:4]
+    #doy = get_observation_day_of_year(indata)
+    filename = dirname + '/ionex/' + group_name + 'g%3.3d0.%si'%(doy,year)
+    # Now run TECOR
+    tecor = AIPSTask('tecor')
+    tecor.indata = indata
+    tecor.infile = filename
+    tecor.nfiles = num_days#get_number_days_observations(indata)
+    tecor.gainver = gainver
+    tecor.gainuse = gainuse
+    tecor.aparm[1:] = [1, 0]    
+    tecor()
+
+
+def runuvflg(indata, sources=[], freqid=1, bchan=0, echan=0, bif=0, eif=0,
+            antennas=[], flagver=1, opcode='FLAG', reason='uvflg', infile=''):
+
+    '''Must set indata'''
+    #assert (indata != None)
+    uvflg = AIPSTask('uvflg')
+    uvflg.indata = indata
+    try:
+        uvflg.intext = infile
+    except AttributeError:
+        uvflg.infile = infile
+    uvflg.sources[1:] = sources
+    uvflg.freqid = freqid
+    uvflg.bchan = bchan
+    uvflg.echan = echan
+    uvflg.bif = bif
+    uvflg.eif = eif
+    uvflg.antennas[1:] = antennas
+    # flagver changed to outfgver in 31DEC07:
+    if hasattr(uvflg, 'outfgver'):
+        uvflg.outfgver = flagver
+    else:
+        uvflg.flagver = flagver
+    uvflg.opcode = opcode
+    uvflg.reason = reason
+    uvflg()
