@@ -89,4 +89,7 @@ rmcalsour = RT-VIR
 fit_ant = TIA
 
 # name of the interferometer
-interferometer = EAVN 
+interferometer = EAVN
+
+#EOP file directory
+eop_path =  

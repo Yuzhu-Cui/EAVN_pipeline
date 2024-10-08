@@ -591,6 +591,20 @@ if (not solint):
     # solint defaults to the typical scan length on the phase reference
     solint = getsolint(sources, phaseref_sources)
 
+# Download TEC maps and EOPs
+if interferometer == 'VLBA':
+   (year, month, day)=get_observation_year_month_day(uvdata)
+   num_days=get_num_days(uvdata)
+
+   doy=get_day_of_year(year, month, day)
+    
+   get_TEC(year,doy,TECU_model)
+   if not os.path.exists(eop_path):
+      os.mkdir(eop_path)
+   get_eop(eop_path)
+
+   if num_days==2: get_TEC(year,doy+1,TECU_model)
+
 # 2, plot the raw data, scan list, summaries of entire data, integration time, visibilities on each baseline
 if tmask[0] <= 2 <= tmask[1]:
     logger.info('Starting tmask 2: plot the data - vs time and frequency')

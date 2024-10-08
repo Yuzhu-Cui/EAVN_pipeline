@@ -532,43 +532,69 @@ def runfittp(indata, outfile):
         fittp.outfile = outfile
     fittp()   
 
-def runtecor(indata, doy, num_days, processing_option, gainver, gainuse, dirname):
-    group_name = ''
-    if(processing_option == 'IO_COD'):
-        group_name='cod'
-    elif(processing_option == 'IO_COR'):
-        group_name='cor'
-    elif(processing_option == 'IO_ESA'):
-        group_name='esa'
-    elif(processing_option == 'IO_ESR'):
-        group_name='esr'
-    elif(processing_option == 'IO_IGR'):
-        group_name='igr'
-    elif(processing_option == 'IO_IGS'):
-        group_name='igs'
-    elif(processing_option == 'IO_JPL'):
-        group_name='jpl'
-    elif(processing_option == 'IO_JPR'):
-        group_name='jpr'
-    elif(processing_option == 'IO_UPC'):
-        group_name='upc'
-    elif(processing_option == 'IO_UPR'):
-        group_name='upr'
+def runtecor(indata,year,doy,num_days,gainuse,TECU_model):
+    year=str(year)[2:4]
+    if doy<10:
+        doy='00'+str(doy)
+    if doy<100:
+        doy='0'+str(doy)
     else:
-        raise RuntimeError, "unknown ionosphere processing option " + processing_option._str__()
-    year = indata.header.date_obs[2:4]
-    #doy = get_observation_day_of_year(indata)
-    filename = dirname + '/ionex/' + group_name + 'g%3.3d0.%si'%(doy,year)
-    # Now run TECOR
+        doy=str(doy)
+    name=TECU_model+doy+'0.'+year+'i'
     tecor = AIPSTask('tecor')
-    tecor.indata = indata
-    tecor.infile = filename
-    tecor.nfiles = num_days#get_number_days_observations(indata)
-    tecor.gainver = gainver
+    if os.path.exists(name):
+        tecor.infile='PWD:'+name
+    tecor.indata=indata
+    tecor.nfiles=num_days
     tecor.gainuse = gainuse
-    tecor.aparm[1:] = [1, 0]    
+    tecor.aparm[1:] = [1,0]
     tecor()
 
+#def runtecor(indata, doy, num_days, processing_option, gainver, gainuse, dirname):
+#    group_name = ''
+#    if(processing_option == 'IO_COD'):
+#        group_name='cod'
+#    elif(processing_option == 'IO_COR'):
+#        group_name='cor'
+#    elif(processing_option == 'IO_ESA'):
+#        group_name='esa'
+#    elif(processing_option == 'IO_ESR'):
+#        group_name='esr'
+#    elif(processing_option == 'IO_IGR'):
+#        group_name='igr'
+#    elif(processing_option == 'IO_IGS'):
+#        group_name='igs'
+#    elif(processing_option == 'IO_JPL'):
+#        group_name='jpl'
+#    elif(processing_option == 'IO_JPR'):
+#        group_name='jpr'
+#    elif(processing_option == 'IO_UPC'):
+#        group_name='upc'
+#    elif(processing_option == 'IO_UPR'):
+#        group_name='upr'
+#    else:
+#        raise RuntimeError, "unknown ionosphere processing option " + processing_option._str__()
+#    year = indata.header.date_obs[2:4]
+#    #doy = get_observation_day_of_year(indata)
+#    filename = dirname + '/ionex/' + group_name + 'g%3.3d0.%si'%(doy,year)
+#    # Now run TECOR
+#    tecor = AIPSTask('tecor')
+#    tecor.indata = indata
+#    tecor.infile = filename
+#    tecor.nfiles = num_days#get_number_days_observations(indata)
+#    tecor.gainver = gainver
+#    tecor.gainuse = gainuse
+#    tecor.aparm[1:] = [1, 0]    
+#    tecor()
+
+def runeops(indata, gainver, gainuse, eop_path):
+    eops = AIPSTask("CLCOR")
+    eops.indata = indata
+    eops.gainver = gainver
+    eops.gainuse = gainuse
+    eops.opcode = "EOPS"
+    eops.infile = eop_path+'usno_finals.erp'
+    eops()
 
 def runuvflg(indata, sources=[], freqid=1, bchan=0, echan=0, bif=0, eif=0,
             antennas=[], flagver=1, opcode='FLAG', reason='uvflg', infile=''):

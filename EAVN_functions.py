@@ -573,3 +573,33 @@ def get_observation_year_month_day(uvdata):
 def get_observation_day_of_year(uvdata):
     (year, month, day) = get_observation_year_month_day(uvdata)
     return get_day_of_year(year, month, day)
+
+# Download TEC maps
+def get_TEC(year,doy,TECU_model):
+    year=str(year)[2:4]
+    if doy<10:
+        doy='00'+str(doy)
+    elif doy<100:
+        doy='0'+str(doy)
+    else:
+        doy=str(doy)
+    name=TECU_model+doy+'0.'+year+'i'
+    if os.path.exists(name):
+        logger.info('File already there.')
+    else:
+        #path='ftp://cddis.gsfc.nasa.gov/gps/products/ionex/20'+year+'/'+doy+'/'
+        path='ftp://gdc.cddis.eosdis.nasa.gov/gnss/products/ionex/20'+year+'/'+doy+'/'
+        #os.popen(r'wget -t 30 -O '+name+'.Z '+path+name+'.Z')
+        os.popen(r'curl --insecure -O --ftp-ssl '+path+name+'.Z')
+        os.popen(r'uncompress -f '+name+'.Z')
+
+# Download EOP file
+def get_eop(eop_path):
+    if os.path.exists(eop_path+'usno_finals.erp'):
+        age = (time.time() - os.stat(eop_path+'usno_finals.erp')[8])/3600
+        logger.info('usno_finals.erp exists, not downloaded.')
+    else:
+        os.popen(r'curl --insecure -O --ftp-ssl ftp://gdc.cddis.eosdis.nasa.gov/vlbi/gsfc/ancillary/solve_apriori/usno_finals.erp')   #wget ftp://cddis.gsfc.nasa.gov/vlbi/gsfc/ancillary/solve_apriori/usno500_finals.erp http://gemini.gsfc.nasa.gov/solve_save ftp://ftp.lbo.us/pub/staff/wbrisken/EOP
+        os.popen(r'curl --insecure -O --ftp-ssl ftp://gdc.cddis.eosdis.nasa.gov/vlbi/gsfc/ancillary/solve_apriori/usno500_finals.erp')
+        os.popen(r'mv usno500_finals.erp '+eop_path+'usno_finals2.erp')
+        os.popen(r'mv usno_finals.erp '+eop_path+'usno_finals.erp')
