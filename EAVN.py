@@ -677,3 +677,15 @@ if interferometer == 'EAVN':
            runfittp(indata=splitdata, outfile=fitsoutfile)
    
        logger.info('Ending tmask 7')
+
+
+if interferometer == 'VLBA':
+   # 3, Calibrate Ionospheric Delay and Fix Earth Orientation Parameters
+   if tmask[0] <= 3 <= tmask[1]:
+       logger.info('Starting tmask 3: Calibrate Ionospheric Delay and Fix Earth Orientation Parameters')
+       table_vers(uvdata=uvdata, cl=1, sn=0, fg=0, bp=0)
+
+       runtecor(indata=uvdata,year=year,doy=doy,num_days=num_days,gainuse=2,TECU_model=TECU_model,tecdir=tecdir) #CL1-->CL2
+       table_vers(uvdata=uvdata, cl=2, sn=0, fg=0, bp=0)
+       runeops(indata=uvdata, gainver=2, gainuse=3, eop_path=eop_path) #CL2-->CL3
+       logger.info('Ending tmask 3')

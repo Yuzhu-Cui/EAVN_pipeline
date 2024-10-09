@@ -542,8 +542,8 @@ def runtecor(indata,year,doy,num_days,gainuse,TECU_model,tecdir):
         doy=str(doy)
     name=TECU_model+doy+'0.'+year+'i'
     tecor = AIPSTask('tecor')
-    if os.path.exists(name):
-        tecor.infile='PWD:'+tecdir+name
+    if os.path.exists('%s%s' % (tecdir,name)):
+        tecor.infile=tecdir+name #'PWD:'
     tecor.indata=indata
     tecor.nfiles=num_days
     tecor.gainuse = gainuse

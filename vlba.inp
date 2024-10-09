@@ -92,10 +92,10 @@ fit_ant =
 interferometer = VLBA
 
 #EOP file directory
-eop_path = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/BL250/BL250F 
+eop_path = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/BL250/ 
 
 # TECU model
 TECU_model = jplg
 
 #TEC directory
-tecdir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/BL250 
+tecdir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/BL250/ 
