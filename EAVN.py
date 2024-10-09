@@ -48,6 +48,7 @@ def checkin(control):
     global tmask, fitsdir, fits_file, nselfcal, doplot, msgkill
     global source_select, experiment_dir, output_prefix, nbp_table, fring_snr
     global disk, freqid, dopng, rmcalsour, fit_ant, interferometer
+    global eop_path, TECU_model, tecdir
 
     EAVN_aips_tasks.AIPSTask.version = control['version']['default']
     EAVN_aips_tasks.task_versions = control['version']
@@ -156,6 +157,10 @@ def checkin(control):
         raise 'You must set either solint or phaseref_sources'
 
     output_prefix = outdir + '/' + experiment
+
+    eop_path = control['eop_path'][0]
+    TECU_model = control['TECU_model'][0]
+    tecdir = control['tecdir'][0]
 
 def EAVN_checkdata():
     # extract useful information from the dataset
@@ -312,7 +317,7 @@ def EAVN_flag(uvdata):
         logger.info(chflg_file + " is missing")
 
         nflag = min(nchan//16, 8)
-        logger.info('Flagging outer %d' %s nflag + 'channels instead')
+        logger.info('Flagging outer %d' % nflag + 'channels instead')
         reason = 'subband edge'
         runuvflg(indata=uvdata, bchan=0, echan=nflag, reason=reason)
         runuvflg(indata=uvdata, bchan=nchan+1-nflag, echan=nchan, reason=reason)
@@ -425,7 +430,7 @@ def EAVN_ampcal(antab_file, uvdata):
         nplots=8, stokes='HALF', antennas=[], docalib=1, gainuse=2,
         doband=0, bpver=0, flagver=0, dotv=-1)
     plot(uvdata, def_name('CL2'), dopng=dopng)
-    
+   
     #run ANTAB
     logger.info('Antab file= %s' % antab_file)
     runantab(antab_file, uvdata)
@@ -540,9 +545,9 @@ control = parse_inp(args[0])
 # check the inputs and re-type where necessary
 checkin(control)
 
-if interferometer == 'VLBA' or interferometer == 'EVN':
-   uvflg_file = getfile('uvflg')
-   assert(os.path.isfile(uvflg_file)), uvflg_file + ' does not exist!'
+#if interferometer == 'VLBA' or interferometer == 'EVN':
+#   uvflg_file = getfile('uvflg')
+#   assert(os.path.isfile(uvflg_file)), uvflg_file + ' does not exist!'
 
 if interferometer == 'EAVN' or interferometer == 'EVN':
    # get some necessary files assuming standard names
@@ -559,7 +564,14 @@ uvavgdata = AIPSUVData(uvdata.name, 'UVAVG', uvdata.disk, 1)
 # 1, Load and sort the data - average too if requested
 if tmask[0] <= 1 <= tmask[1]:
     logger.info('Starting tmask 1: load and sort the data')
-    EAVN_load(uvdata, msortdata, 1./60., 0, interferometer)
+    if interferometer == 'EAVN':
+       EAVN_load(uvdata, msortdata, 1./60., 0, interferometer)
+    elif interferometer == 'VLBA':
+       EAVN_load(uvdata, msortdata, 0.25, 0.7, interferometer)
+    elif interferometer == 'EVN':
+       EAVN_load(uvdata, msortdata, 1./60., 0, interferometer)
+    else:
+       raise ValueError('Please input the correct interferometer name: EAVN, VLAB or EVN!')   
     logger.info('Ending tmask 1')
 
 # Always do this bit to make sure names are right at end of block. The order of
@@ -594,16 +606,16 @@ if (not solint):
 # Download TEC maps and EOPs
 if interferometer == 'VLBA':
    (year, month, day)=get_observation_year_month_day(uvdata)
-   num_days=get_num_days(uvdata)
+   num_days = get_number_days_observations(uvdata)
 
    doy=get_day_of_year(year, month, day)
     
-   get_TEC(year,doy,TECU_model)
+   get_TEC(year,doy,TECU_model,tecdir)
    if not os.path.exists(eop_path):
       os.mkdir(eop_path)
    get_eop(eop_path)
 
-   if num_days==2: get_TEC(year,doy+1,TECU_model)
+   if num_days==2: get_TEC(year,doy+1,TECU_model, tecdir)
 
 # 2, plot the raw data, scan list, summaries of entire data, integration time, visibilities on each baseline
 if tmask[0] <= 2 <= tmask[1]:
@@ -613,55 +625,55 @@ if tmask[0] <= 2 <= tmask[1]:
     EAVN_plot1()
     logger.info('Ending tmask 2')
 
-
-# 3, Autocorrelation and amplitude calibration
-if tmask[0] <= 3 <= tmask[1]:
-    logger.info('Starting tmask 3: autocorrelation and amplitude calibration')
-    table_vers(uvdata=uvdata, cl=1, sn=0, fg=0, bp=0)
-
-    EAVN_ampcal(antab_file, uvdata)
-    logger.info('Ending tmask 3')
-
-# 4, Bandpass calibration
-if tmask[0] <= 4 <= tmask[1] and nbp_table:
-    logger.info('Starting tmask 4: bandpass calibration')
-    table_vers(uvdata=uvdata, cl=3, sn=3, fg=0, bp=0)
-
-    runbpass(refant=refantlist[0],indata=uvdata, calsour=bpass_calibrators) #refant=refantlist[0]
-    # Do the less time consuming plots now
-    EAVN_plot2a(uvdata)
-    logger.info('Ending tmask 4')
-
-# 5, Fringe fitting.
-if tmask[0] <= 5 <= tmask[1]:
-    logger.info('Starting tmask 5: fringe fitting')
-    table_vers(uvdata=uvdata, cl=3, sn=3, fg=0, bp=nbp_table)
-    
-    EAVN_fring(uvdata, rmcalsour)
-    logger.info('Ending tmask 5')
-
-# 6, Split
-if tmask[0] <= 6 <= tmask[1]:
-    logger.info('Starting tmask 6: split the calibrated data')
-    table_vers(uvdata=uvdata, cl=4, sn=5, fg=0, bp=nbp_table)
-    sources = list(sources)
-    for source in sources:
-        splitdata = AIPSUVData(source, 'SPLIT', uvdata.disk, 1)
-        zap_old_data(splitdata)
-
-    runsplit(sources=sources, indata=uvdata, gainuse=4, docalib=1,
-            doband=nbp_table, bpver=nbp_table) #, outseq=1)
-
-    logger.info('Ending tmask 6')
-
-# 7, Save the split data as fits
-if tmask[0] <= 7 <= tmask[1]:
-    logger.info('Starting tmask 7: split the calibrated data')
-    for source in sources:
-        splitdata = AIPSUVData(source, 'SPLIT', uvdata.disk, 1)
-        fitsoutfile = output_prefix + '_' + source + \
-                            '.UVDATA.FITS'
-        save_old_file(fitsoutfile)
-        runfittp(indata=splitdata, outfile=fitsoutfile)
-
-    logger.info('Ending tmask 7')
+if interferometer == 'EAVN':
+   # 3, Autocorrelation and amplitude calibration
+   if tmask[0] <= 3 <= tmask[1]:
+       logger.info('Starting tmask 3: autocorrelation and amplitude calibration')
+       table_vers(uvdata=uvdata, cl=1, sn=0, fg=0, bp=0)
+   
+       EAVN_ampcal(antab_file, uvdata)
+       logger.info('Ending tmask 3')
+   
+   # 4, Bandpass calibration
+   if tmask[0] <= 4 <= tmask[1] and nbp_table:
+       logger.info('Starting tmask 4: bandpass calibration')
+       table_vers(uvdata=uvdata, cl=3, sn=3, fg=0, bp=0)
+   
+       runbpass(refant=refantlist[0],indata=uvdata, calsour=bpass_calibrators) #refant=refantlist[0]
+       # Do the less time consuming plots now
+       EAVN_plot2a(uvdata)
+       logger.info('Ending tmask 4')
+   
+   # 5, Fringe fitting.
+   if tmask[0] <= 5 <= tmask[1]:
+       logger.info('Starting tmask 5: fringe fitting')
+       table_vers(uvdata=uvdata, cl=3, sn=3, fg=0, bp=nbp_table)
+       
+       EAVN_fring(uvdata, rmcalsour)
+       logger.info('Ending tmask 5')
+   
+   # 6, Split
+   if tmask[0] <= 6 <= tmask[1]:
+       logger.info('Starting tmask 6: split the calibrated data')
+       table_vers(uvdata=uvdata, cl=4, sn=5, fg=0, bp=nbp_table)
+       sources = list(sources)
+       for source in sources:
+           splitdata = AIPSUVData(source, 'SPLIT', uvdata.disk, 1)
+           zap_old_data(splitdata)
+   
+       runsplit(sources=sources, indata=uvdata, gainuse=4, docalib=1,
+               doband=nbp_table, bpver=nbp_table) #, outseq=1)
+   
+       logger.info('Ending tmask 6')
+   
+   # 7, Save the split data as fits
+   if tmask[0] <= 7 <= tmask[1]:
+       logger.info('Starting tmask 7: split the calibrated data')
+       for source in sources:
+           splitdata = AIPSUVData(source, 'SPLIT', uvdata.disk, 1)
+           fitsoutfile = output_prefix + '_' + source + \
+                               '.UVDATA.FITS'
+           save_old_file(fitsoutfile)
+           runfittp(indata=splitdata, outfile=fitsoutfile)
+   
+       logger.info('Ending tmask 7')

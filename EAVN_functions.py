@@ -574,8 +574,27 @@ def get_observation_day_of_year(uvdata):
     (year, month, day) = get_observation_year_month_day(uvdata)
     return get_day_of_year(year, month, day)
 
+# Get the number of days of observations
+def get_number_days_observations(uvdata):
+    """Find out how long the observations are.  Assumes the data has been sorted
+
+    """
+    nx_table = uvdata.table('AIPS NX', 0)
+    num_rows = len(nx_table)
+    # The NX table is FORTRANish
+    # Check the first observation
+    first_row = nx_table[0]
+    num_days = int(nx_table[num_rows - 1]['time'] + 1)
+    #start_time = first_row['TIME'][0] - 0.5 * first_row['TIME INTERVAL'][0]
+    #if(start_time < 0.0):
+    #    raise (RuntimeError, "Starting observation before starting date: Run FXTIM!")
+    ## Now check the last scan
+    #last_row = nx_table[num_rows-1]
+    #end_time = last_row['TIME'][0] + 0.5 * last_row['TIME INTERVAL'][0]
+    return num_days #int(math.ceil(end_time))
+
 # Download TEC maps
-def get_TEC(year,doy,TECU_model):
+def get_TEC(year,doy,TECU_model,tecdir):
     year=str(year)[2:4]
     if doy<10:
         doy='00'+str(doy)
@@ -590,16 +609,18 @@ def get_TEC(year,doy,TECU_model):
         #path='ftp://cddis.gsfc.nasa.gov/gps/products/ionex/20'+year+'/'+doy+'/'
         path='ftp://gdc.cddis.eosdis.nasa.gov/gnss/products/ionex/20'+year+'/'+doy+'/'
         #os.popen(r'wget -t 30 -O '+name+'.Z '+path+name+'.Z')
-        os.popen(r'curl --insecure -O --ftp-ssl '+path+name+'.Z')
-        os.popen(r'uncompress -f '+name+'.Z')
+        os.system('curl --insecure -O --ftp-ssl '+path+name+'.Z')
+        os.system('uncompress -f '+name+'.Z')
+        os.system('mv %s %s' % (name, tecdir))
+        
 
 # Download EOP file
 def get_eop(eop_path):
     if os.path.exists(eop_path+'usno_finals.erp'):
-        age = (time.time() - os.stat(eop_path+'usno_finals.erp')[8])/3600
+        #age = (time.time() - os.stat(eop_path+'usno_finals.erp')[8])/3600
         logger.info('usno_finals.erp exists, not downloaded.')
     else:
-        os.popen(r'curl --insecure -O --ftp-ssl ftp://gdc.cddis.eosdis.nasa.gov/vlbi/gsfc/ancillary/solve_apriori/usno_finals.erp')   #wget ftp://cddis.gsfc.nasa.gov/vlbi/gsfc/ancillary/solve_apriori/usno500_finals.erp http://gemini.gsfc.nasa.gov/solve_save ftp://ftp.lbo.us/pub/staff/wbrisken/EOP
-        os.popen(r'curl --insecure -O --ftp-ssl ftp://gdc.cddis.eosdis.nasa.gov/vlbi/gsfc/ancillary/solve_apriori/usno500_finals.erp')
-        os.popen(r'mv usno500_finals.erp '+eop_path+'usno_finals2.erp')
-        os.popen(r'mv usno_finals.erp '+eop_path+'usno_finals.erp')
+        os.system('curl --insecure -O --ftp-ssl ftp://gdc.cddis.eosdis.nasa.gov/vlbi/gsfc/ancillary/solve_apriori/usno_finals.erp')   #wget ftp://cddis.gsfc.nasa.gov/vlbi/gsfc/ancillary/solve_apriori/usno500_finals.erp http://gemini.gsfc.nasa.gov/solve_save ftp://ftp.lbo.us/pub/staff/wbrisken/EOP
+        os.system('curl --insecure -O --ftp-ssl ftp://gdc.cddis.eosdis.nasa.gov/vlbi/gsfc/ancillary/solve_apriori/usno500_finals.erp')
+        os.system('mv usno500_finals.erp '+eop_path+'usno_finals2.erp')
+        os.system('mv usno_finals.erp '+eop_path+'usno_finals.erp')

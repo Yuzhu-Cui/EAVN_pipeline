@@ -7,14 +7,14 @@ tmask = 1
 
 # if a multiple pass experiment then append the pass number to the experiment
 # name (e.g. M87)
-experiment = a17078a        
-userno = 1003          
+experiment = bl250f        
+userno = 1004          
 
 # refant is a prioritised list of reference antennas
-refant = KUS
+refant = LA
 
 # plotref is a list of antennas, baselines to which will be plotted.
-plotref = TIA
+plotref = PT
 
 # bpass is a list of sources for bandpass calibration
 bpass = 3C273
@@ -33,16 +33,16 @@ target = M87
 
 # directories default to $IN/<experiment>, $OUT/<experiment>,
 # $PIPEFITS/<experiment>
-fitsdir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data
+fitsdir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/BL250/BL250F
 #/share/data/askap/bqlao/EAVN/EAVN_pipeline/data 
-indir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data
+indir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/BL250/BL250F
 #/share/data/askap/bqlao/EAVN/EAVN_pipeline/data
-outdir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data   
+outdir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/BL250/BL250F
 #/share/data/askap/bqlao/EAVN/EAVN_pipeline/data
 
 # fits_file defaults to EVN archive standard names. Do not give the full path
 # (the directory will be taken from the fitsdir parameter)
-fits_file = a17078a.fits
+fits_file = bl250f.idifits
 
 # sciter is the no of iterations of selfcal - defaults to 2 (0 is a valid
 # input, not default)
@@ -83,19 +83,19 @@ fring_snr = 5
 #sources =
  
 # the cal source need to remove in fring fitting
-rmcalsour = RT-VIR
+rmcalsour = 
 
 # dofit ant in apcal task
-fit_ant = TIA
+fit_ant = 
 
 # name of the interferometer
-interferometer = EAVN
+interferometer = VLBA
 
 #EOP file directory
-eop_path = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/BL250 
+eop_path = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/BL250/BL250F 
 
 # TECU model
 TECU_model = jplg
 
 #TEC directory
-tecdir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/BL250
+tecdir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/BL250 

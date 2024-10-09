@@ -532,7 +532,7 @@ def runfittp(indata, outfile):
         fittp.outfile = outfile
     fittp()   
 
-def runtecor(indata,year,doy,num_days,gainuse,TECU_model):
+def runtecor(indata,year,doy,num_days,gainuse,TECU_model,tecdir):
     year=str(year)[2:4]
     if doy<10:
         doy='00'+str(doy)
@@ -543,7 +543,7 @@ def runtecor(indata,year,doy,num_days,gainuse,TECU_model):
     name=TECU_model+doy+'0.'+year+'i'
     tecor = AIPSTask('tecor')
     if os.path.exists(name):
-        tecor.infile='PWD:'+name
+        tecor.infile='PWD:'+tecdir+name
     tecor.indata=indata
     tecor.nfiles=num_days
     tecor.gainuse = gainuse
