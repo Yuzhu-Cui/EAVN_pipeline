@@ -689,3 +689,17 @@ if interferometer == 'VLBA':
        table_vers(uvdata=uvdata, cl=2, sn=0, fg=0, bp=0)
        runeops(indata=uvdata, gainver=2, gainuse=3, eop_path=eop_path) #CL2-->CL3
        logger.info('Ending tmask 3')
+
+   # 4, Apply Digital Sampling Correction to VLBA data
+   if tmask[0] <= 4 <= tmask[1]:
+       logger.info('Starting tmask 4: Apply Digital Sampling Correction to VLBA data')
+       table_vers(uvdata=uvdata, cl=3, sn=0, fg=0, bp=0)
+       runaccor(indata=uvdata, solint=-0.5) #-->sn1
+       table_vers(uvdata=uvdata, cl=3, sn=1, fg=0, bp=0)
+       runsnsmo(indata=uvdata, inver=1, outver=2)
+       table_vers(uvdata=uvdata, cl=3, sn=1, fg=0, bp=0) #CL3-->CL4
+       runclcal(snver=1, indata=uvdata, refant=refantlist[0], gainver=3, gainuse=4, opcode='CALI',
+         interpol='self', calsour=[], sources=[], samptype='', doblank=0, dobtween=0, inver=0) 
+       logger.info('Ending tmask 4')
+
+

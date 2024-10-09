@@ -622,3 +622,18 @@ def runuvflg(indata, sources=[], freqid=1, bchan=0, echan=0, bif=0, eif=0,
     uvflg.opcode = opcode
     uvflg.reason = reason
     uvflg()
+
+def runsnsmo(indata, inver, outver):#, refant):
+    snsmo = AIPSTask('SNSMO')
+    snsmo.indata = indata
+    snsmo.samptype = 'mwf'
+    snsmo.doblank = -1 
+    snsmo.smotype = 'ampl'
+    snsmo.cparm[1:] = [0.5, 0, 0, 0, 0, 1]
+    #snsmo.refant = refant
+    snsmo.inver  = inver
+    snsmo.outver = outver
+    #snsmo.bparm[1:] = [0, 0, 1, 1, 1]
+    #snsmo.smotype   = 'VLBI'
+    snsmo()
+
