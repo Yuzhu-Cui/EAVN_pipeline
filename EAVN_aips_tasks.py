@@ -373,18 +373,19 @@ def runsnplt(indata, inext='SN', invers=0, optype='PHAS', dotv=-1, antennas=[],
     logger.info('Task SNPLT appears to have ended successfully')
     return error
 
-def runapcal(indata, tyver=1, gcver=1, snver=1, freqid=1, opcode='grid', ant_id=7, len_ants=7):
+def runapcal(indata, tyver=1, gcver=1, snver=1, freqid=1, opcode='grid', ant_id=7, len_ants=7, interferometer='EAVN'):
     """Must set indata"""
     #assert (indata != None)
     logger.info('Task APCAL  (release of 31DEC24) begins')
     apcal = AIPSTask('apcal')
     apcal.source = []
     apcal.antenna = []
-    for i in range(len_ants): 
-        if (i+1) == ant_id:
-           apcal.dofit[ant_id] = 1
-        else:
-           apcal.dofit[i+1] = -1
+    if interferometer == 'EAVN':
+       for i in range(len_ants): 
+           if (i+1) == ant_id:
+              apcal.dofit[ant_id] = 1
+           else:
+              apcal.dofit[i+1] = -1
     apcal.aparm[1] = 1.3
     #apcal.dofit[ant_id] = 1
     apcal.indata = indata
@@ -664,4 +665,23 @@ def runpccor(indata,refant=0,cals=[''],timer=[]):
     pccor.calsour[1:] = cals
     pccor()
 
+def runacscl(indata,gainuse=0,bpver=1,doband=1): #,subarray=0):
+    acscl = AIPSTask('acscl')
+    acscl.indata = indata
+    #acscl.timer[1:] = [0]
+    acscl.solint = -2
+    acscl.docalib = 1
+    #acscl.subarray = subarray
+    acscl.gainuse = gainuse
+    acscl.bpver= bpver
+    acscl.doband=doband
+    acscl()
 
+def runtacop(indata,inext='SN',invers=0,outvers=0):
+    tacop = AIPSTask('tacop')
+    tacop.indata = indata
+    tacop.inext = inext
+    tacop.invers = invers
+    tacop.outvers = outvers
+    tacop.outdata = indata
+    tacop()

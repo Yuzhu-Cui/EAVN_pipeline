@@ -684,7 +684,7 @@ if interferometer == 'VLBA':
    if tmask[0] <= 3 <= tmask[1]:
        logger.info('Starting tmask 3: Calibrate Ionospheric Delay and Fix Earth Orientation Parameters')
        table_vers(uvdata=uvdata, cl=1, sn=0, fg=0, bp=0)
-
+       
        runtecor(indata=uvdata,year=year,doy=doy,num_days=num_days,gainuse=2,TECU_model=TECU_model,tecdir=tecdir) #CL1-->CL2
        table_vers(uvdata=uvdata, cl=2, sn=0, fg=0, bp=0)
        runeops(indata=uvdata, gainver=2, gainuse=3, eop_path=eop_path) #CL2-->CL3
@@ -720,15 +720,42 @@ if interferometer == 'VLBA':
           logger.info('Running PCCOR\n')
           runpccor(indata=uvdata,refant=int(refantlist[0]),timer=[])
           calibrator = phaseref_sources
-          runclcal(uvdata=uvdata,cals=[calibrator[0]],gainver=cl_hv,gainuse=cl_hv+1,snver=sn_hv+1,refant=refantlist[0],interpol='2PT')
+          runclcal(indata=uvdata,calsour=[calibrator[0]],gainver=cl_hv,gainuse=cl_hv+1,snver=sn_hv+1,refant=refantlist[0],interpol='2PT')
           aparm = set_default_aparms('possm')
           runpossm(uvdata,aparm=aparm, sources=[calibrator[0]], gainuse=cl_hv+1)
        else:
           logger.info('Starting tmask 5: Create BP Table and Calibrate Bandpass Shape')
           table_vers(uvdata=uvdata, cl=4, sn=1, fg=0, bp=0)
-
+          logger.info('Determine bandpass corrections')
           runbpass(refant=refantlist[0],indata=uvdata, calsour=bpass_calibrators) #refant=refantlist[0]
           # Do the less time consuming plots now
           EAVN_plot2a(uvdata)
     
        logger.info('Ending tmask 5')
+
+   # 6, Apply Amplitude Corrections
+   if tmask[0] <= 6 <= tmask[1]:
+      logger.info('Starting tmask 5: Apply Amplitude Corrections')
+      table_vers(uvdata=uvdata, cl=4, sn=1, fg=0, bp=1)
+      logger.info('Do additional autocorrelation corrections')
+      runacscl(indata=uvdata,gainuse=4,bpver=1,doband=1)
+      table_vers(uvdata=uvdata, cl=4, sn=2, fg=0, bp=1)
+      logger.info('Do additional autocorrelation corrections')
+      runsnsmo(indata=uvdata, inver=2, outver=3)
+      table_vers(uvdata=uvdata, cl=4, sn=2, fg=0, bp=1)
+      logger.info('Replace original table with smoothed table')
+      runtacop(indata=uvdata,inext='SN',invers=2,outvers=3)
+      table_vers(uvdata=uvdata, cl=4, sn=2, fg=0, bp=1)
+      calibrator = phaseref_sources
+      logger.info('Replace original table with smoothed table')
+      runclcal(indata=uvdata,calsour=[],gainver=4,gainuse=5,snver=2,refant=refantlist[0],interpol='self', opcode='cali', doblank=-1)
+      table_vers(uvdata=uvdata, cl=5, sn=2, fg=0, bp=1)
+      logger.info('Determine a-priori amplitude corrections')
+      runapcal(indata=uvdata, tyver=1, gcver=1, snver=3, freqid=1, opcode='opac', interferometer='VLBA')
+      uvdata.zap_table('AIPS PL', -1)
+      runsnplt(uvdata, 'SN', 3, 'AMP')
+      plot(uvdata, def_name('SN3'), dopng=dopng)
+
+      table_vers(uvdata=uvdata, cl=5, sn=3, fg=0, bp=1) 
+      logger.info('Apply corrections to CL table')
+      runclcal(indata=uvdata,calsour=[],gainver=5,gainuse=6,snver=3,refant=refantlist[0],interpol='self', opcode='cali', doblank=-1)
