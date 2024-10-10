@@ -697,9 +697,38 @@ if interferometer == 'VLBA':
        runaccor(indata=uvdata, solint=-0.5) #-->sn1
        table_vers(uvdata=uvdata, cl=3, sn=1, fg=0, bp=0)
        runsnsmo(indata=uvdata, inver=1, outver=2)
-       table_vers(uvdata=uvdata, cl=3, sn=1, fg=0, bp=0) #CL3-->CL4
+       table_vers(uvdata=uvdata, cl=3, sn=1, fg=0, bp=0) 
        runclcal(snver=1, indata=uvdata, refant=refantlist[0], gainver=3, gainuse=4, opcode='CALI',
-         interpol='self', calsour=[], sources=[], samptype='', doblank=0, dobtween=0, inver=0) 
+         interpol='self', calsour=[], sources=[], samptype='', doblank=0, dobtween=0, inver=0) #CL3-->CL4
+       uvdata.zap_table('AIPS PL', -1)
+       aparm = set_default_aparms('possm')
+       runpossm(indata=uvdata, aparm=aparm, solint=-1, bpver=1, gainuse=4)
+       plot(uvdata, def_name('ACCOR'), dopng=dopng)
+ 
        logger.info('Ending tmask 4')
 
 
+   # 5, Determine Delay Corrections if PC table exists or Create BP Table and Calibrate Bandpass Shape
+   if tmask[0] <= 5 <= tmask[1]:
+       #uvdata.zap_table('PC',-1)
+       #logger.info('loading pc table')
+       #runpclod(indata=uvdata,OP.pcfile)
+       if check_table_version_exists(uvdata=uvdata, table='AIPS PC', version=1):
+          logger.info('Starting tmask 5: Determine Delay Corrections') 
+          cl_hv = uvdata.table_highver('CL')
+          sn_hv= uvdata.table_highver('SN')
+          logger.info('Running PCCOR\n')
+          runpccor(indata=uvdata,refant=int(refantlist[0]),timer=[])
+          calibrator = phaseref_sources
+          runclcal(uvdata=uvdata,cals=[calibrator[0]],gainver=cl_hv,gainuse=cl_hv+1,snver=sn_hv+1,refant=refantlist[0],interpol='2PT')
+          aparm = set_default_aparms('possm')
+          runpossm(uvdata,aparm=aparm, sources=[calibrator[0]], gainuse=cl_hv+1)
+       else:
+          logger.info('Starting tmask 5: Create BP Table and Calibrate Bandpass Shape')
+          table_vers(uvdata=uvdata, cl=4, sn=1, fg=0, bp=0)
+
+          runbpass(refant=refantlist[0],indata=uvdata, calsour=bpass_calibrators) #refant=refantlist[0]
+          # Do the less time consuming plots now
+          EAVN_plot2a(uvdata)
+    
+       logger.info('Ending tmask 5')

@@ -624,3 +624,20 @@ def get_eop(eop_path):
         os.system('curl --insecure -O --ftp-ssl ftp://gdc.cddis.eosdis.nasa.gov/vlbi/gsfc/ancillary/solve_apriori/usno500_finals.erp')
         os.system('mv usno500_finals.erp '+eop_path+'usno_finals2.erp')
         os.system('mv usno_finals.erp '+eop_path+'usno_finals.erp')
+
+def check_table_version_exists(uvdata, table, version):
+    """Check whether a table version exists, as 'AIPS CL', 'AIPS BP', etc.
+
+    if version == 0, then check for ANY of that table, 
+    """
+    # If version is zero, then accept any of that table
+    if(version == 0):
+        for t in uvdata.tables:
+            if(t[1] == table): break
+        else: return 0
+        return 1
+    # Otherwise, check for the version number too
+    for t in uvdata.tables:
+        if((t[0] == version) and (t[1] == table)): break
+    else: return 0
+    return 1

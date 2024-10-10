@@ -637,3 +637,31 @@ def runsnsmo(indata, inver, outver):#, refant):
     #snsmo.smotype   = 'VLBI'
     snsmo()
 
+def runpclod(indata,calin):
+    pclod = AIPSTask('pclod')
+    pclod.indata = indata
+    pclod.calin = calin
+    pclod()
+
+def runprtab(indata,ine,inv,return_of=False):
+    prtab = AIPSTask('prtab')
+    prtab.indata = indata
+    prtab.inext = ine
+    prtab.invers = inv
+    prtab.docrt =-1
+    prtab.outprint = outfile
+    #prtab.box = [0]
+    prtab()
+    if return_of:
+       return outfile
+
+def runpccor(indata,refant=0,cals=[''],timer=[]):
+    pccor = AIPSTask('pccor')
+    pccor.indata = indata
+    pccor.timer[1:] = timer
+    pccor.inver = 0
+    pccor.refant = refant
+    pccor.calsour[1:] = cals
+    pccor()
+
+
