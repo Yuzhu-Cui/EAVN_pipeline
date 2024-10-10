@@ -735,27 +735,80 @@ if interferometer == 'VLBA':
 
    # 6, Apply Amplitude Corrections
    if tmask[0] <= 6 <= tmask[1]:
-      logger.info('Starting tmask 5: Apply Amplitude Corrections')
-      table_vers(uvdata=uvdata, cl=4, sn=1, fg=0, bp=1)
-      logger.info('Do additional autocorrelation corrections')
-      runacscl(indata=uvdata,gainuse=4,bpver=1,doband=1)
-      table_vers(uvdata=uvdata, cl=4, sn=2, fg=0, bp=1)
-      logger.info('Do additional autocorrelation corrections')
-      runsnsmo(indata=uvdata, inver=2, outver=3)
-      table_vers(uvdata=uvdata, cl=4, sn=2, fg=0, bp=1)
-      logger.info('Replace original table with smoothed table')
-      runtacop(indata=uvdata,inext='SN',invers=2,outvers=3)
-      table_vers(uvdata=uvdata, cl=4, sn=2, fg=0, bp=1)
-      calibrator = phaseref_sources
-      logger.info('Replace original table with smoothed table')
-      runclcal(indata=uvdata,calsour=[],gainver=4,gainuse=5,snver=2,refant=refantlist[0],interpol='self', opcode='cali', doblank=-1)
-      table_vers(uvdata=uvdata, cl=5, sn=2, fg=0, bp=1)
-      logger.info('Determine a-priori amplitude corrections')
-      runapcal(indata=uvdata, tyver=1, gcver=1, snver=3, freqid=1, opcode='opac', interferometer='VLBA')
-      uvdata.zap_table('AIPS PL', -1)
-      runsnplt(uvdata, 'SN', 3, 'AMP')
-      plot(uvdata, def_name('SN3'), dopng=dopng)
+       logger.info('Starting tmask 6: Apply Amplitude Corrections')
+       table_vers(uvdata=uvdata, cl=4, sn=1, fg=0, bp=1)
+       logger.info('Do additional autocorrelation corrections')
+       runacscl(indata=uvdata,gainuse=4,bpver=1,doband=1)
+       table_vers(uvdata=uvdata, cl=4, sn=2, fg=0, bp=1)
+       logger.info('Do additional autocorrelation corrections')
+       runsnsmo(indata=uvdata, inver=2, outver=3)
+       table_vers(uvdata=uvdata, cl=4, sn=2, fg=0, bp=1)
+       logger.info('Replace original table with smoothed table')
+       runtacop(indata=uvdata,inext='SN',invers=2,outvers=3)
+       table_vers(uvdata=uvdata, cl=4, sn=2, fg=0, bp=1)
+       calibrator = phaseref_sources
+       logger.info('Replace original table with smoothed table')
+       runclcal(indata=uvdata,calsour=[],gainver=4,gainuse=5,snver=2,refant=refantlist[0],interpol='self', opcode='cali', doblank=-1)
+       table_vers(uvdata=uvdata, cl=5, sn=2, fg=0, bp=1)
+       logger.info('Determine a-priori amplitude corrections')
+       runapcal(indata=uvdata, tyver=1, gcver=1, snver=3, freqid=1, opcode='opac', interferometer='VLBA')
+       uvdata.zap_table('AIPS PL', -1)
+       runsnplt(uvdata, 'SN', 3, 'AMP')
+       plot(uvdata, def_name('SN3'), dopng=dopng)
 
-      table_vers(uvdata=uvdata, cl=5, sn=3, fg=0, bp=1) 
-      logger.info('Apply corrections to CL table')
-      runclcal(indata=uvdata,calsour=[],gainver=5,gainuse=6,snver=3,refant=refantlist[0],interpol='self', opcode='cali', doblank=-1)
+       table_vers(uvdata=uvdata, cl=5, sn=3, fg=0, bp=1) 
+       logger.info('Apply corrections to CL table')
+       runclcal(indata=uvdata,calsour=[],gainver=5,gainuse=6,snver=3,refant=refantlist[0],interpol='self', opcode='cali', doblank=-1)
+       logger.info('Ending tmask 6')
+
+   # 7, Correct Phases for Parallactic Angles
+   if tmask[0] <= 7 <= tmask[1]:
+       logger.info('Starting tmask 7: Correct Phases for Parallactic Angles')
+       table_vers(uvdata=uvdata, cl=6, sn=3, fg=0, bp=1)
+       runclcor_pang(indata=uvdata, gainver=6, gainuse=7) #CL6 --> CL7
+       logger.info('Ending tmask 7')       
+
+   # 8, Fringe Fit the Data and Apply FRING solutions
+   if tmask[0] <= 8 <= tmask[1]:
+       logger.info('Starting tmask 8: Fringe Fit the Data and Apply FRING solutions')
+       table_vers(uvdata=uvdata, cl=7, sn=3, fg=0, bp=1)
+       sources = list(sources)
+       aparm = []
+       aparm[1:] = [0 for i in range(10)]
+       dparm = []
+       dparm[1:] = [0 for i in range(10)]
+       logger.info('Fringe Fit the Data')
+       runfring(indata=uvdata, snver=4, gainuse=0, refant=refantlist[0],
+            solint=0.25, calsour=sources,
+            aparm=aparm, dparm=dparm) #--> SN4
+       logger.info('Apply FRING solutions') 
+       runclcal(indata=uvdata,calsour=sources,gainver=7,gainuse=8,snver=4,refant=refantlist[0],interpol='self', opcode='cali', doblank=-1) #CL7 --> CL8
+       logger.info('Ending tmask 8')
+
+
+   # 9, Split
+   if tmask[0] <= 9 <= tmask[1]:
+       logger.info('Starting tmask 9: split the calibrated data')
+       table_vers(uvdata=uvdata, cl=8, sn=4, fg=0, bp=nbp_table)
+       sources = list(sources)
+       for source in sources:
+           splitdata = AIPSUVData(source, 'SPLIT', uvdata.disk, 1)
+           zap_old_data(splitdata)
+
+       runsplit(sources=sources, indata=uvdata, gainuse=8, docalib=1,
+               doband=nbp_table, bpver=nbp_table) #, outseq=1)
+
+       logger.info('Ending tmask 9')
+
+   # 10, Save the split data as fits
+   if tmask[0] <= 10 <= tmask[1]:
+       logger.info('Starting tmask 10: split the calibrated data')
+       for source in sources:
+           splitdata = AIPSUVData(source, 'SPLIT', uvdata.disk, 1)
+           fitsoutfile = output_prefix + '_' + source + \
+                               '.UVDATA.FITS'
+           save_old_file(fitsoutfile)
+           runfittp(indata=splitdata, outfile=fitsoutfile)
+
+       logger.info('Ending tmask 10')
+

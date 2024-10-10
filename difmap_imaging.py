@@ -284,6 +284,63 @@ def difmap_imaging(vis_file, out_dir, flag_ant,
     difmap.communicate()
     print('imaging done!')
 
+def difmap_imaging_vlba(vis_file, out_dir,
+                   clean_gain,
+                   clean_sigma,
+                   map_size,
+                   pixel_size,
+                   clean_win_file, target_name):
+    print('Start imaging processing ... ...')
+    difmap = subprocess.Popen("difmap", stdin=subprocess.PIPE, stdout=logfile)
+    print('read data')
+    difmap.stdin.write(("obs " + vis_file + "\n").encode())
+    print('select data')
+    difmap.stdin.write(("select ll" + "\n").encode())
+    # time average
+    print('uv average')
+    difmap.stdin.write(("uvave 30,true" + "\n").encode())
+    # start a point source model
+    difmap.stdin.write(("startmod" + "\n").encode())
+    difmap.stdin.write(("save %s/kava2_startmod" % out_dir + "\n").encode())
+    difmap.stdin.write(("mapcolor color" + "\n").encode())
+    difmap.stdin.write(("mapsize %d,%f" % (map_size,pixel_size) + "\n").encode())
+    # uniform weight
+    difmap.stdin.write(("uvw 0,-1" + "\n").encode())
+    difmap.stdin.write(("save %s/kava2_phase" % out_dir + "\n").encode())
+    difmap.stdin.write(("rwin %s" % clean_win_file + "\n").encode())
+    print('clean ...')
+    difmap.stdin.write(("clean 1000,%f" % clean_gain+ "\n").encode())
+    difmap.stdin.write(("if(peak(flux,max)/imstat(rms) > %d) repeat; clean; selfcal;  until(peak(flux,max)/imstat(rms) < %d) end if" % (clean_sigma, clean_sigma) + "\n").encode())
+
+    difmap.stdin.write(("gscale" + "\n").encode())
+    difmap.stdin.write(("clrmod true" + "\n").encode())
+    difmap.stdin.write(("if(peak(flux,max)/imstat(rms) > %d) repeat; clean; selfcal;  until(peak(flux,max)/imstat(rms) < %d) end if" % (clean_sigma, clean_sigma) + "\n").encode())
+    difmap.stdin.write(("save %s/tian2_opengscale" % out_dir + "\n").encode())
+
+
+    for i in [120, 60, 30, 15, 6, 3, 1, 0.5]:
+        difmap.stdin.write(("selfcal true,true,%s" % i + "\n").encode())
+        difmap.stdin.write(("clrmod true" + "\n").encode())
+        difmap.stdin.write(("if(peak(flux,max)/imstat(rms) > %d) repeat; clean; selfcal;  until(peak(flux,max)/imstat(rms) < %d) end if" % (clean_sigma, clean_sigma) + "\n").encode())
+        difmap.stdin.write(("save %s/tian2_openselfcal%sclean" % (out_dir, i) + "\n").encode())
+
+    difmap.stdin.write(("print imstat(rms)" + "\n").encode())
+    difmap.stdin.write(("delwin" + "\n").encode())
+    difmap.stdin.write(("device /NULL" + "\n").encode())
+    difmap.stdin.write(("mapl" + "\n").encode())
+    difmap.stdin.write(("mapcolor color" + "\n").encode())
+    difmap.stdin.write(("cmul=3*imstat(rms)" + "\n").encode())
+    difmap.stdin.write(("levs=-1,1.00,1.41,2.00,2.83,4.00,5.65,7.99,11.30,15.98,22.60,31.95,45.18,63.88,90.33,127.73,180.61,255.38,361.11,510.61,722.00,1020.91,1443.57" + "\n").encode())
+    #Save image
+    difmap.stdin.write(("device %s/%s.ps/vcps" % (out_dir,target_name) + "\n").encode())
+    difmap.stdin.write(("mapl cln" + "\n").encode())
+    difmap.stdin.write(("print \"MARKING_STRING\";print peak(flux);print imstat(rms);print cmul;print imstat(bmin);print imstat(bmaj);print imstat(bpa);print \"END_MARKING\"" + "\n").encode())
+    difmap.stdin.write(("save %s/%s" % (out_dir, target_name) + "\n").encode())
+    difmap.stdin.write(("exit\n\n").encode())
+    difmap.communicate()
+    print('imaging done!')
+
+
 
 # main function
 usage = 'usage: python3 %prog [options] imaging.inp'
@@ -304,33 +361,53 @@ cleangain = float(control.get('clean_gain', [])[0])
 cleansigma = int(control['cleansigma'][0])
 mapsize = int(control['mapsize'][0])
 pixelsize = float(control.get('pixelsize', [0])[0])
-#1. strong point source processing
-#uv average 
-poitsource_uvfits = poitsourceuvfits
-uvaver_file = uvaver(poitsource_uvfits)
+interferometer = control.get('interferometer', [])[0]
 
-#check antenna baseline data
-checked_flag_ant = check_data(uvaver_file)#poitsource_uvfits)
+if interferometer == 'EAVN':
+   #1. strong point source processing
+   #uv average 
+   poitsource_uvfits = poitsourceuvfits
+   uvaver_file = uvaver(poitsource_uvfits)
+   
+   #check antenna baseline data
+   checked_flag_ant = check_data(uvaver_file)#poitsource_uvfits)
+   
+   #flag data test
+   #antn = "TIA"
+   #flag_file = flag_data(uvaver_file, antn)
+   
+   #print(flag_file)
+   #
+   #check_data(flag_file)
+   
+   # target source imaging
+   vis_file = visfile
+   flag_ant = checked_flag_ant 
+   clean_win_file = cleanwinfile 
+   target_source = targetsource
+   difmap_imaging(vis_file=vis_file, out_dir=outdir, flag_ant=flag_ant,
+                      clean_gain = cleangain,
+                      clean_sigma=cleansigma,
+                      map_size=mapsize,
+                      pixel_size=pixelsize,
+                      clean_win_file=cleanwinfile, target_name=targetsource)
+   
+   #os.system('ps2pdf ./data/%.ps')
+   plot_cleanimage('%s/%s.fits' % (outdir, targetsource))
 
-#flag data test
-#antn = "TIA"
-#flag_file = flag_data(uvaver_file, antn)
+if interferometer == 'VLBA':
+   # target source imaging
+   vis_file = visfile
+   clean_win_file = cleanwinfile
+   target_source = targetsource
 
-#print(flag_file)
-#
-#check_data(flag_file)
+   difmap_imaging_vlba(vis_file=vis_file, out_dir=outdir,
+                      clean_gain = cleangain,
+                      clean_sigma=cleansigma,
+                      map_size=mapsize,
+                      pixel_size=pixelsize,
+                      clean_win_file=cleanwinfile, target_name=targetsource)
 
-# target source imaging
-vis_file = visfile
-flag_ant = checked_flag_ant 
-clean_win_file = cleanwinfile 
-target_source = targetsource
-difmap_imaging(vis_file=vis_file, out_dir=outdir, flag_ant=flag_ant,
-                   clean_gain = cleangain,
-                   clean_sigma=cleansigma,
-                   map_size=mapsize,
-                   pixel_size=pixelsize,
-                   clean_win_file=cleanwinfile, target_name=targetsource)
+   #os.system('ps2pdf ./data/%.ps')
+   plot_cleanimage('%s/%s.fits' % (outdir, targetsource))
 
-#os.system('ps2pdf ./data/%.ps')
-plot_cleanimage('./data/%s.fits' % targetsource)

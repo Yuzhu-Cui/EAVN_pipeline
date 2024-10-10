@@ -446,7 +446,7 @@ def runbpass(refant, indata, calsour):
     logger.info('Task BPASS appears to have ended successfully')
 
 def runfring(indata, snver, solint, aparm, dparm, refant, freqid=1, 
-        gainuse=0, calsour=[], snr=5):
+        gainuse=0, calsour=[], snr=5, interferometer='EAVN'):
 
     """Must set indata, snver, solint, refantlist, aparm, dparm"""
     #assert (indata != None, snver != None, solint != None, refantlist != None,
@@ -478,9 +478,14 @@ def runfring(indata, snver, solint, aparm, dparm, refant, freqid=1,
     fring.snver = snver
     fring.solint = solint
     fring.calsour[1:] = calsour
-    fring.aparm[1:] = aparm[1:]
-    fring.aparm[7] = snr
-    fring.dparm[1:] = dparm[1:]
+    if interferometer=='EAVN':
+       fring.aparm[1:] = aparm[1:]
+       fring.aparm[7] = snr
+       fring.dparm[1:] = dparm[1:]
+    if interferometer=='VLBA':
+       fring.aparm[1:] = aparm[1:]
+       fring.aparm[6] = 2 #print some information on solutions
+       fring.aparm[9] = 1 #do exhaustive baseline search
     fring()
     logger.info('Task FRING appears to have ended successfully')
 
@@ -685,3 +690,14 @@ def runtacop(indata,inext='SN',invers=0,outvers=0):
     tacop.outvers = outvers
     tacop.outdata = indata
     tacop()
+
+def runclcor_pang(indata, gainver, gainuse):
+    clcor = AIPSTask('clcor')
+    clcor.indata = indata
+    clcor.gainver = gainver
+    clcor.gainuse = gainuse
+    clcor.opcode = 'PANG'
+    clcor.clcorprm[1] = 1
+    clcor.clcorprm[2:] = [0]
+    clcor()
+

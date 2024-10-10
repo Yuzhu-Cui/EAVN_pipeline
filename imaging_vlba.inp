@@ -1,11 +1,10 @@
 # -----------------------------------------------
 # required parameters
-
 # strong point source uvfits file
-poitsourceuvfits = ./data/a17078a_1219+044.UVDATA.FITS
+poitsourceuvfits = ./data/BL250/BL250F/bl250f_OJ287.UVDATA.FITS
 
 # target source uvfits file
-visfile = ./data/a17078a_M87.UVDATA.FITS
+visfile = ./data/BL250/BL250F/bl250f_M87.UVDATA.FITS
 
 # win file in CLEAN step 
 cleanwinfile = ./data/origin.win
@@ -14,7 +13,7 @@ cleanwinfile = ./data/origin.win
 targetsource = 'M87'
 
 # out directory
-outdir = ./data
+outdir = ./data/BL250/BL250F
 
 # map size 
 mapsize = 2048
@@ -29,5 +28,5 @@ clean_gain = 1.0
 cleansigma = 8
 
 # name of the interferometer
-interferometer = EAVN
+interferometer = VLBA
 
