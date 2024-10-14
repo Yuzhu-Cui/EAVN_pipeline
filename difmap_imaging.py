@@ -502,6 +502,7 @@ cleansigma = int(control['cleansigma'][0])
 mapsize = int(control['mapsize'][0])
 pixelsize = float(control.get('pixelsize', [0])[0])
 interferometer = control.get('interferometer', [])[0]
+x_range = control['xrange'][0]
 
 if interferometer == 'EAVN':
    #1. strong point source processing

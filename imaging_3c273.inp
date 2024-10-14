@@ -31,3 +31,8 @@ cleansigma = 8
 # name of the interferometer
 interferometer = EAVN
 
+# xy range xa
+xyrange = '-25,10,-25,10'
+
+
+
