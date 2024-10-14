@@ -538,7 +538,7 @@ def runfittp(indata, outfile):
         fittp.outfile = outfile
     fittp()   
 
-def runtecor(indata,year,doy,num_days,gainuse,TECU_model,tecdir):
+def runtecor(indata,year,doy,num_days,gainver,gainuse,TECU_model,tecdir):
     year=str(year)[2:4]
     if doy<10:
         doy='00'+str(doy)
@@ -552,6 +552,7 @@ def runtecor(indata,year,doy,num_days,gainuse,TECU_model,tecdir):
         tecor.infile=tecdir+name #'PWD:'
     tecor.indata=indata
     tecor.nfiles=num_days
+    tecor.gainver = gainver
     tecor.gainuse = gainuse
     tecor.aparm[1:] = [1,0]
     tecor()

@@ -678,37 +678,72 @@ if interferometer == 'EAVN':
    
        logger.info('Ending tmask 7')
 
-
 if interferometer == 'VLBA':
    # 3, Calibrate Ionospheric Delay and Fix Earth Orientation Parameters
    if tmask[0] <= 3 <= tmask[1]:
        logger.info('Starting tmask 3: Calibrate Ionospheric Delay and Fix Earth Orientation Parameters')
-       table_vers(uvdata=uvdata, cl=1, sn=0, fg=0, bp=0)
-       
-       runtecor(indata=uvdata,year=year,doy=doy,num_days=num_days,gainuse=2,TECU_model=TECU_model,tecdir=tecdir) #CL1-->CL2
-       table_vers(uvdata=uvdata, cl=2, sn=0, fg=0, bp=0)
-       runeops(indata=uvdata, gainver=2, gainuse=3, eop_path=eop_path) #CL2-->CL3
+       cl_hv = uvdata.table_highver('CL')
+       sn_hv= uvdata.table_highver('SN')
+       logger.info('Before tmask 3: CL table %d, SN table %d' % (cl_hv, sn_hv))
+       table_vers(uvdata=uvdata, cl=cl_hv, sn=sn_hv, fg=0, bp=0)
+       logger.info('Running tecor')
+       runtecor(indata=uvdata,year=year,doy=doy,num_days=num_days,gainver=cl_hv,gainuse=cl_hv+1,TECU_model=TECU_model,tecdir=tecdir) #CL1-->CL2
+       cl_hv = uvdata.table_highver('CL')
+       sn_hv= uvdata.table_highver('SN')
+       logger.info('Ending tecor: CL table %d, SN table %d' % (cl_hv, sn_hv)) 
+       table_vers(uvdata=uvdata, cl=cl_hv, sn=sn_hv, fg=0, bp=0)
+       logger.info('Running eops for Fix Earth Orientation Parameters')
+       runeops(indata=uvdata, gainver=cl_hv, gainuse=cl_hv+1, eop_path=eop_path) #CL2-->CL3
+       cl_hv = uvdata.table_highver('CL')
+       sn_hv= uvdata.table_highver('SN')
+       logger.info('Ending eops: CL table %d, SN table %d' % (cl_hv, sn_hv))
        logger.info('Ending tmask 3')
 
    # 4, Apply Digital Sampling Correction to VLBA data
    if tmask[0] <= 4 <= tmask[1]:
        logger.info('Starting tmask 4: Apply Digital Sampling Correction to VLBA data')
-       table_vers(uvdata=uvdata, cl=3, sn=0, fg=0, bp=0)
+       cl_hv = uvdata.table_highver('CL')
+       sn_hv= uvdata.table_highver('SN')
+       logger.info('Before tmask 4: CL table %d, SN table %d' % (cl_hv, sn_hv)) 
+       table_vers(uvdata=uvdata, cl=cl_hv, sn=sn_hv, fg=0, bp=0)
+       logger.info('Running accor')
        runaccor(indata=uvdata, solint=-0.5) #-->sn1
-       table_vers(uvdata=uvdata, cl=3, sn=1, fg=0, bp=0)
-       runsnsmo(indata=uvdata, inver=1, outver=2)
-       table_vers(uvdata=uvdata, cl=3, sn=1, fg=0, bp=0) 
-       runclcal(snver=1, indata=uvdata, refant=refantlist[0], gainver=3, gainuse=4, opcode='CALI',
+
+       cl_hv = uvdata.table_highver('CL')
+       sn_hv= uvdata.table_highver('SN')
+       logger.info('Ending accor: CL table %d, SN table %d' % (cl_hv, sn_hv))
+       table_vers(uvdata=uvdata, cl=cl_hv, sn=sn_hv, fg=0, bp=0)
+       logger.info('Running snsmo')
+       runsnsmo(indata=uvdata, inver=sn_hv, outver=sn_hv+1)
+       cl_hv = uvdata.table_highver('CL')
+       sn_hv= uvdata.table_highver('SN')
+       logger.info('Ending snsmo: CL table %d, SN table %d' % (cl_hv, sn_hv))
+
+       #logger.info('Running tacop')
+       #runtacop(indata,inext='SN',invers=sn_hv,outvers=sn_hv-1)
+
+       #cl_hv = uvdata.table_highver('CL')
+       #sn_hv= uvdata.table_highver('SN')
+
+       #logger.info('Ending tacop: CL table %d, SN table %d' % (cl_hv, sn_hv))
+       table_vers(uvdata=uvdata, cl=cl_hv, sn=sn_hv, fg=0, bp=0)
+       logger.info('Running clcal') 
+       runclcal(snver=sn_hv, indata=uvdata, refant=refantlist[0], gainver=cl_hv, gainuse=cl_hv+1, opcode='CALI',
          interpol='self', calsour=[], sources=[], samptype='', doblank=0, dobtween=0, inver=0) #CL3-->CL4
+
+       cl_hv = uvdata.table_highver('CL')
+       sn_hv= uvdata.table_highver('SN')
+       logger.info('Ending clcal: CL table %d, SN table %d' % (cl_hv, sn_hv))
        uvdata.zap_table('AIPS PL', -1)
        aparm = set_default_aparms('possm')
-       runpossm(indata=uvdata, aparm=aparm, solint=-1, bpver=1, gainuse=4)
-       plot(uvdata, def_name('ACCOR'), dopng=dopng)
- 
+       logger.info('Running possm')
+       runpossm(indata=uvdata, aparm=aparm, solint=-1, bpver=1, gainuse=cl_hv)
+       plot(uvdata, def_name('Digital_Sampling_Correction'), dopng=dopng)
+       logger.info('Ending possm') 
        logger.info('Ending tmask 4')
 
 
-   # 5, Determine Delay Corrections if PC table exists or Create BP Table and Calibrate Bandpass Shape
+   # 5, Determine Delay Corrections if PC table exists and Create BP Table and Calibrate Bandpass Shape
    if tmask[0] <= 5 <= tmask[1]:
        #uvdata.zap_table('PC',-1)
        #logger.info('loading pc table')
@@ -717,18 +752,48 @@ if interferometer == 'VLBA':
           logger.info('Starting tmask 5: Determine Delay Corrections') 
           cl_hv = uvdata.table_highver('CL')
           sn_hv= uvdata.table_highver('SN')
-          logger.info('Running PCCOR\n')
-          runpccor(indata=uvdata,refant=int(refantlist[0]),timer=[])
-          calibrator = phaseref_sources
-          runclcal(indata=uvdata,calsour=[calibrator[0]],gainver=cl_hv,gainuse=cl_hv+1,snver=sn_hv+1,refant=refantlist[0],interpol='2PT')
-          aparm = set_default_aparms('possm')
-          runpossm(uvdata,aparm=aparm, sources=[calibrator[0]], gainuse=cl_hv+1)
-       else:
-          logger.info('Starting tmask 5: Create BP Table and Calibrate Bandpass Shape')
-          table_vers(uvdata=uvdata, cl=4, sn=1, fg=0, bp=0)
+          logger.info('Before tmask 5: CL table %d, SN table %d' % (cl_hv, sn_hv))
+          #logger.info('Running PCCOR')
+          #runpccor(indata=uvdata)
+          #calibrator = phaseref_sources
+          #cl_hv = uvdata.table_highver('CL')
+          #sn_hv= uvdata.table_highver('SN')
+          #logger.info('Ending pccor: CL table %d, SN table %d' % (cl_hv, sn_hv))
+          #logger.info('Running clcal')
+          #runclcal(indata=uvdata,calsour=[calibrator[0]],gainver=cl_hv,gainuse=cl_hv+1,snver=sn_hv,refant=refantlist[0],interpol='2PT')
+          #cl_hv = uvdata.table_highver('CL')
+          #sn_hv= uvdata.table_highver('SN')
+          #logger.info('Ending clcal: CL table %d, SN table %d' % (cl_hv, sn_hv))
+          #aparm = set_default_aparms('possm')
+          #logger.info('Running possm')
+          #runpossm(uvdata,aparm=aparm, sources=[calibrator[0]], gainuse=cl_hv)
+          table_vers(uvdata=uvdata, cl=cl_hv, sn=sn_hv, fg=0, bp=0)
           logger.info('Determine bandpass corrections')
+          cl_hv = uvdata.table_highver('CL')
+          sn_hv= uvdata.table_highver('SN')
+          logger.info('Running bpass')
           runbpass(refant=refantlist[0],indata=uvdata, calsour=bpass_calibrators) #refant=refantlist[0]
           # Do the less time consuming plots now
+          cl_hv = uvdata.table_highver('CL')
+          sn_hv= uvdata.table_highver('SN')
+          bp_hv = uvdata.table_highver('BP')
+          logger.info('Ending bpass: CL table %d, SN table %d, BP table %d' % (cl_hv, sn_hv, bp_hv))
+          EAVN_plot2a(uvdata)
+       else:
+          logger.info('Starting tmask 5: Create BP Table and Calibrate Bandpass Shape')
+          cl_hv = uvdata.table_highver('CL')
+          sn_hv= uvdata.table_highver('SN')
+          logger.info('Before tmask 5: CL table %d, SN table %d' % (cl_hv, sn_hv))
+          table_vers(uvdata=uvdata, cl=cl_hv, sn=sn_hv, fg=0, bp=0)
+          logger.info('Determine bandpass corrections')
+          logger.info('Running bpass')
+          runbpass(refant=refantlist[0],indata=uvdata, calsour=bpass_calibrators) #refant=refantlist[0]
+          # Do the less time consuming plots now
+          cl_hv = uvdata.table_highver('CL')
+          sn_hv= uvdata.table_highver('SN')
+          bp_hv = uvdata.table_highver('BP')
+          logger.info('Ending bpass: CL table %d, SN table %d, BP table %d' % (cl_hv, sn_hv, bp_hv))
+
           EAVN_plot2a(uvdata)
     
        logger.info('Ending tmask 5')
@@ -736,66 +801,133 @@ if interferometer == 'VLBA':
    # 6, Apply Amplitude Corrections
    if tmask[0] <= 6 <= tmask[1]:
        logger.info('Starting tmask 6: Apply Amplitude Corrections')
-       table_vers(uvdata=uvdata, cl=4, sn=1, fg=0, bp=1)
+       cl_hv = uvdata.table_highver('CL')
+       sn_hv= uvdata.table_highver('SN')
+       bp_hv = uvdata.table_highver('BP')
+       logger.info('Before tmask 6: CL table %d, SN table %d, BP table %d' % (cl_hv, sn_hv, bp_hv))
+       table_vers(uvdata=uvdata, cl=cl_hv, sn=sn_hv, fg=0, bp=bp_hv)
        logger.info('Do additional autocorrelation corrections')
-       runacscl(indata=uvdata,gainuse=4,bpver=1,doband=1)
-       table_vers(uvdata=uvdata, cl=4, sn=2, fg=0, bp=1)
+
+       logger.info('Running acscl')
+       runacscl(indata=uvdata,gainuse=cl_hv,bpver=bp_hv,doband=1)
+       cl_hv = uvdata.table_highver('CL')
+       sn_hv= uvdata.table_highver('SN')
+       bp_hv = uvdata.table_highver('BP')
+       logger.info('Ending acscl: CL table %d, SN table %d, BP table %d' % (cl_hv, sn_hv, bp_hv))
+       table_vers(uvdata=uvdata, cl=cl_hv, sn=sn_hv, fg=0, bp=bp_hv)
        logger.info('Do additional autocorrelation corrections')
-       runsnsmo(indata=uvdata, inver=2, outver=3)
-       table_vers(uvdata=uvdata, cl=4, sn=2, fg=0, bp=1)
-       logger.info('Replace original table with smoothed table')
-       runtacop(indata=uvdata,inext='SN',invers=2,outvers=3)
-       table_vers(uvdata=uvdata, cl=4, sn=2, fg=0, bp=1)
+
+       logger.info('Running snsmo') 
+       runsnsmo(indata=uvdata, inver=sn_hv, outver=sn_hv+1)
+       cl_hv = uvdata.table_highver('CL')
+       sn_hv= uvdata.table_highver('SN')
+       bp_hv = uvdata.table_highver('BP')
+       logger.info('Ending snsmo: CL table %d, SN table %d, BP table %d' % (cl_hv, sn_hv, bp_hv))
+
+       #table_vers(uvdata=uvdata, cl=cl_hv, sn=sn_hv, fg=0, bp=bp_hv)
+       #logger.info('Replace original table with smoothed table')
+       #runtacop(indata=uvdata,inext='SN',invers=2,outvers=3)
+       table_vers(uvdata=uvdata, cl=cl_hv, sn=sn_hv, fg=0, bp=bp_hv)
        calibrator = phaseref_sources
        logger.info('Replace original table with smoothed table')
-       runclcal(indata=uvdata,calsour=[],gainver=4,gainuse=5,snver=2,refant=refantlist[0],interpol='self', opcode='cali', doblank=-1)
-       table_vers(uvdata=uvdata, cl=5, sn=2, fg=0, bp=1)
-       logger.info('Determine a-priori amplitude corrections')
-       runapcal(indata=uvdata, tyver=1, gcver=1, snver=3, freqid=1, opcode='opac', interferometer='VLBA')
-       uvdata.zap_table('AIPS PL', -1)
-       runsnplt(uvdata, 'SN', 3, 'AMP')
-       plot(uvdata, def_name('SN3'), dopng=dopng)
+       logger.info('Running clcal')
+       runclcal(indata=uvdata,calsour=[],gainver=cl_hv,gainuse=cl_hv+1,snver=sn_hv,refant=refantlist[0],interpol='self', opcode='cali', doblank=-1)
+       cl_hv = uvdata.table_highver('CL')
+       sn_hv= uvdata.table_highver('SN')
+       bp_hv = uvdata.table_highver('BP')
+       logger.info('Ending clcal: CL table %d, SN table %d, BP table %d' % (cl_hv, sn_hv, bp_hv))
 
-       table_vers(uvdata=uvdata, cl=5, sn=3, fg=0, bp=1) 
+       table_vers(uvdata=uvdata, cl=cl_hv, sn=sn_hv, fg=0, bp=bp_hv)
+       logger.info('Determine a-priori amplitude corrections')
+       logger.info('Running apcal')
+       runapcal(indata=uvdata, tyver=1, gcver=1, snver=sn_hv+1, freqid=1, opcode='opac', interferometer='VLBA')
+       cl_hv = uvdata.table_highver('CL')
+       sn_hv= uvdata.table_highver('SN')
+       bp_hv = uvdata.table_highver('BP')
+       logger.info('Ending apcal: CL table %d, SN table %d, BP table %d' % (cl_hv, sn_hv, bp_hv))
+
+       uvdata.zap_table('AIPS PL', -1)
+       runsnplt(uvdata, 'SN', sn_hv, 'AMP')
+       plot(uvdata, def_name('SN%d' % sn_hv), dopng=dopng)
+
+       table_vers(uvdata=uvdata, cl=cl_hv, sn=sn_hv, fg=0, bp=bp_hv) 
        logger.info('Apply corrections to CL table')
-       runclcal(indata=uvdata,calsour=[],gainver=5,gainuse=6,snver=3,refant=refantlist[0],interpol='self', opcode='cali', doblank=-1)
+       logger.info('Running clcal')
+       runclcal(indata=uvdata,calsour=[],gainver=cl_hv,gainuse=cl_hv+1,snver=sn_hv,refant=refantlist[0],interpol='self', opcode='cali', doblank=-1)
+       cl_hv = uvdata.table_highver('CL')
+       sn_hv= uvdata.table_highver('SN')
+       bp_hv = uvdata.table_highver('BP')
+       logger.info('Ending clcal: CL table %d, SN table %d, BP table %d' % (cl_hv, sn_hv, bp_hv))
+
        logger.info('Ending tmask 6')
 
    # 7, Correct Phases for Parallactic Angles
    if tmask[0] <= 7 <= tmask[1]:
        logger.info('Starting tmask 7: Correct Phases for Parallactic Angles')
-       table_vers(uvdata=uvdata, cl=6, sn=3, fg=0, bp=1)
-       runclcor_pang(indata=uvdata, gainver=6, gainuse=7) #CL6 --> CL7
+       cl_hv = uvdata.table_highver('CL')
+       sn_hv= uvdata.table_highver('SN')
+       bp_hv = uvdata.table_highver('BP')
+       logger.info('Before tmask 7: CL table %d, SN table %d, BP table %d' % (cl_hv, sn_hv, bp_hv))
+
+       table_vers(uvdata=uvdata, cl=cl_hv, sn=sn_hv, fg=0, bp=bp_hv)
+       runclcor_pang(indata=uvdata, gainver=cl_hv, gainuse=cl_hv+1) #CL6 --> CL7
+       cl_hv = uvdata.table_highver('CL')
+       sn_hv= uvdata.table_highver('SN')
+       bp_hv = uvdata.table_highver('BP')
+       logger.info('Ending clcor: CL table %d, SN table %d, BP table %d' % (cl_hv, sn_hv, bp_hv))
+
        logger.info('Ending tmask 7')       
 
    # 8, Fringe Fit the Data and Apply FRING solutions
    if tmask[0] <= 8 <= tmask[1]:
        logger.info('Starting tmask 8: Fringe Fit the Data and Apply FRING solutions')
-       table_vers(uvdata=uvdata, cl=7, sn=3, fg=0, bp=1)
+       cl_hv = uvdata.table_highver('CL')
+       sn_hv= uvdata.table_highver('SN')
+       bp_hv = uvdata.table_highver('BP')
+       logger.info('Before tmask 8: CL table %d, SN table %d, BP table %d' % (cl_hv, sn_hv, bp_hv))
+
+       table_vers(uvdata=uvdata, cl=cl_hv, sn=sn_hv, fg=0, bp=bp_hv)
        sources = list(sources)
        aparm = []
        aparm[1:] = [0 for i in range(10)]
        dparm = []
        dparm[1:] = [0 for i in range(10)]
        logger.info('Fringe Fit the Data')
-       runfring(indata=uvdata, snver=4, gainuse=0, refant=refantlist[0],
+       logger.info('Running fring')
+       runfring(indata=uvdata, snver=sn_hv, gainuse=0, refant=refantlist[0],
             solint=0.25, calsour=sources,
             aparm=aparm, dparm=dparm) #--> SN4
+       cl_hv = uvdata.table_highver('CL')
+       sn_hv= uvdata.table_highver('SN')
+       bp_hv = uvdata.table_highver('BP')
+       logger.info('Ending fring: CL table %d, SN table %d, BP table %d' % (cl_hv, sn_hv, bp_hv))
+
        logger.info('Apply FRING solutions') 
-       runclcal(indata=uvdata,calsour=sources,gainver=7,gainuse=8,snver=4,refant=refantlist[0],interpol='self', opcode='cali', doblank=-1) #CL7 --> CL8
+       logger.info('Running clcal')
+       runclcal(indata=uvdata,calsour=sources,gainver=cl_hv,gainuse=cl_hv+1,snver=sn_hv,refant=refantlist[0],interpol='self', opcode='cali', doblank=-1) #CL7 --> CL8
+       cl_hv = uvdata.table_highver('CL')
+       sn_hv= uvdata.table_highver('SN')
+       bp_hv = uvdata.table_highver('BP')
+       logger.info('Ending clcal: CL table %d, SN table %d, BP table %d' % (cl_hv, sn_hv, bp_hv))
+
        logger.info('Ending tmask 8')
 
 
    # 9, Split
    if tmask[0] <= 9 <= tmask[1]:
        logger.info('Starting tmask 9: split the calibrated data')
-       table_vers(uvdata=uvdata, cl=8, sn=4, fg=0, bp=nbp_table)
+       cl_hv = uvdata.table_highver('CL')
+       sn_hv= uvdata.table_highver('SN')
+       bp_hv = uvdata.table_highver('BP')
+       logger.info('Before tmask 9: CL table %d, SN table %d, BP table %d' % (cl_hv, sn_hv, bp_hv))
+
+       table_vers(uvdata=uvdata, cl=cl_hv, sn=sn_hv, fg=0, bp=bp_hv)
        sources = list(sources)
        for source in sources:
            splitdata = AIPSUVData(source, 'SPLIT', uvdata.disk, 1)
            zap_old_data(splitdata)
 
-       runsplit(sources=sources, indata=uvdata, gainuse=8, docalib=1,
+       runsplit(sources=sources, indata=uvdata, gainuse=cl_hv, docalib=1,
                doband=nbp_table, bpver=nbp_table) #, outseq=1)
 
        logger.info('Ending tmask 9')

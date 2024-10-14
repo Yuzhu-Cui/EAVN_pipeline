@@ -1,22 +1,23 @@
 # -----------------------------------------------
 # required parameters
+
 # strong point source uvfits file
-poitsourceuvfits = ./data/BW115A/bw115a_3C279.UVDATA.FITS
+poitsourceuvfits = ./data/a17078a_1219+044.UVDATA.FITS
 
 # target source uvfits file
-visfile = ./data/BW115A/bw115a_3C274.UVDATA.FITS
+visfile = ./data/a17078a_3C273.UVDATA.FITS
 
 # win file in CLEAN step 
-cleanwinfile = ./data/origin.win
+cleanwinfile = ./data/86-3C273final.win
 
 # target source name for the name in save clean map 
-targetsource = '3C274'
+targetsource = '3C273'
 
 # out directory
-outdir = ./data/BW115A
+outdir = ./data
 
 # map size 
-mapsize = 1024
+mapsize = 2048
 
 # pixel size       
 pixelsize = 0.02
@@ -25,8 +26,8 @@ pixelsize = 0.02
 clean_gain = 1.0
 
 #clean sigma 
-cleansigma = 6
+cleansigma = 8
 
 # name of the interferometer
-interferometer = VLBA
+interferometer = EAVN
 

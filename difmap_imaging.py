@@ -341,6 +341,146 @@ def difmap_imaging_vlba(vis_file, out_dir,
     print('imaging done!')
 
 
+def difmap_modeling_vlba(visfile,
+                          clean_sigma,
+                          map_size,
+                          pixel_size,
+                          observation_length,
+                          #model_sigma,
+                          #phi,
+                          #major_axis,
+                          #minor_axis,
+                          #model_type,
+                          #model_iter,
+                          #max_jet_component_number,
+                          clean_win_file,
+                          out_dir, target_name):
+    print('Start imaging processing ... ...')
+    difmap = subprocess.Popen("difmap", stdin=subprocess.PIPE, stdout=logfile)
+    difmap.stdin.write(("obs %s" % visfile + "\n").encode())
+    difmap.stdin.write(("select ll" + "\n").encode())
+    difmap.stdin.write(("mapsize %d,%f" % (map_size,pixel_size) + "\n").encode())
+    difmap.stdin.write(("startmod \"\",1" + "\n").encode())     
+    difmap.stdin.write(("uvw 2,0" + "\n").encode())
+    #difmap.stdin.write(("peakwin 1.5" + "\n").encode())
+    difmap.stdin.write(("rwin %s" % clean_win_file + "\n").encode())
+    difmap.stdin.write(("clean 100,0.05" + "\n").encode())
+    difmap.stdin.write(("selfcal false,false,0" + "\n").encode())
+
+    #if snr > clean_sigma more calibration steps will be done
+    #clean-selfcal calibration:
+    difmap.stdin.write(("rwin %s" % clean_win_file + "\n").encode())
+    difmap.stdin.write(("if(peak(flux,max)/imstat(rms) > %d) repeat; clean; selfcal; until(peak(flux,max)/imstat(rms) < %d) end if" % (clean_sigma,clean_sigma) + "\n").encode())
+    difmap.stdin.write(("uvw 2,-1" + "\n").encode())
+   
+    #clean-selfcal calibration:
+    difmap.stdin.write(("rwin %s" % clean_win_file + "\n").encode())
+    difmap.stdin.write(("if(peak(flux,max)/imstat(rms) > %d) repeat; clean; selfcal; until(peak(flux,max)/imstat(rms) < %d) end if" % (clean_sigma,clean_sigma) + "\n").encode())
+
+    difmap.stdin.write(("uvw 0,-1" + "\n").encode())
+
+    #clean-selfcal calibration:
+    difmap.stdin.write(("rwin %s" % clean_win_file + "\n").encode())
+    difmap.stdin.write(("if(peak(flux,max)/imstat(rms) > %d) repeat; clean; selfcal; until(peak(flux,max)/imstat(rms) < %d) end if" % (clean_sigma,clean_sigma) + "\n").encode())
+    difmap.stdin.write(("gscale" + "\n").encode())
+
+    #here one should use tlpot to determine the true value of actual_time
+
+    #observation time domain calibration:
+    difmap.stdin.write(("float observation_length; observation_length = %f; rwin %s; float signal_to_noise_p; float signal_to_noise_a; signal_to_noise_p = peak(flux,max)/imstat(rms); \n \
+    repeat; \n \
+        selfcal true,true,observation_length; \n \
+        signal_to_noise_a = peak(flux,max)/imstat(rms); \n \
+        if(peak(flux,max)/imstat(rms) > %d) \n \
+           if(signal_to_noise_a <= signal_to_noise_p) \n \
+              clean; selfcal; \n \
+              observation_length=observation_length/2; \n \
+              signal_to_noise_a = signal_to_noise_p; \n \
+           end if \n \
+           if(signal_to_noise_a > signal_to_noise_p) \n \
+              clrmod false,true; \n \
+              observation_length=observation_length/2; \n \
+              signal_to_noise_a = signal_to_noise_p; \n \
+           end if \n \
+        else \n \
+           observation_length=observation_length/2; \n \
+        end if \n \
+    until(observation_length < 2)" % (observation_length, clean_win_file, clean_sigma) + "\n").encode())
+    
+    difmap.stdin.write(("selfcal true,true,0" + "\n").encode())
+    difmap.stdin.write(("delwin" + "\n").encode())
+    difmap.stdin.write(("clean 1000,0.01" + "\n").encode())	
+    difmap.stdin.write(("device /NULL" + "\n").encode())
+    difmap.stdin.write(("mapl" + "\n").encode())	
+    difmap.stdin.write(("cmul=3*imstat(rms)" + "\n").encode())	
+
+    #Save image
+    difmap.stdin.write(("device %s/%s.ps/vcps" % (out_dir, target_name)  + "\n").encode())
+
+    difmap.stdin.write(("mapl cln" + "\n").encode())
+    difmap.stdin.write(("print \"MARKING_STRING\";print peak(flux);print imstat(rms);print cmul;print imstat(bmin);print imstat(bmaj);print imstat(bpa);print \"END_MARKING\"" + "\n").encode())
+    difmap.stdin.write(("save %s/%s" % (out_dir, target_name) + "\n").encode())
+    difmap.stdin.write(("exit\n\n").encode())
+    difmap.communicate()
+    print('imaging done!')
+
+    #Modeling
+
+    #clrmod true
+    #
+    #!Fit first (elliptical-gaussian) component
+    #
+    #addcmp peak(flux),true,peak(x),peak(y),true,{major_axis},true,{minor_axis},true,{phi},true,{m_type}
+    #modelfit model_iter
+    #
+    #!Fit other (cirle-gaussian) components
+    #i = 0
+    #repeat;\
+    #	i = i + 1
+    #	if(peak(flux)/imstat(rms) > model_sigma)
+    #		addcmp peak(flux),true,peak(x),peak(y),true,1,false,1,false,{phi},true,1
+    #		modelfit model_iter
+    #	end if
+    #until(i >= {max_loop})
+    #
+    #!Image with model components
+    #!device {obj}.ps/vcps
+    #device {obj}.ps/vps
+    #mapl clean, true 
+    #
+    #!get clean image and beam statistics
+    #print "MARKING_STRING"
+    #print peak(flux)
+    #print imstat(rms)
+    #print cmul
+    #print imstat(bmin)
+    #print imstat(bmaj)
+    #print imstat(bpa)
+    #print "END_MARKING"
+    #
+    #!Write model components parameters to a .mod file
+    #wmod {obj}.mod
+    #
+    #!save modelfit map
+    #save {obj}
+    #
+    #!quit from difmap
+    #quit'''.format(obj_file=visibility_file,
+    #			obj=output_name,
+    #			clean_sigma=clean_sigma,
+    #			map_size=map_size,
+    #			pixel_size=pixel_size,
+    #			observation_length=observation_length,
+    #			model_sigma=model_sigma,
+    #			phi=phi,
+    #			major_axis=major_axis,
+    #			minor_axis=minor_axis,
+    #			m_type=model_type,
+    #			model_iter=model_iter,
+    #			max_loop=max_jet_component_number));
+    #
+    #fn.close();
+
 
 # main function
 usage = 'usage: python3 %prog [options] imaging.inp'
@@ -407,6 +547,21 @@ if interferometer == 'VLBA':
                       map_size=mapsize,
                       pixel_size=pixelsize,
                       clean_win_file=cleanwinfile, target_name=targetsource)
+
+   #difmap_modeling_vlba(visfile=vis_file,
+   #                       clean_sigma=cleansigma,
+   #                       map_size=mapsize,
+   #                       pixel_size=pixelsize,
+   #                       observation_length=120,
+   #                       #model_sigma,
+   #                       #phi,
+   #                       #major_axis,
+   #                       #minor_axis,
+   #                       #model_type,
+   #                       #model_iter,
+   #                       #max_jet_component_number,
+   #                       clean_win_file=cleanwinfile,
+   #                       out_dir=outdir, target_name=target_source)
 
    #os.system('ps2pdf ./data/%.ps')
    plot_cleanimage('%s/%s.fits' % (outdir, targetsource))

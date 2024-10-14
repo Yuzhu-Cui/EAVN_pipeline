@@ -7,22 +7,22 @@ tmask = 1
 
 # if a multiple pass experiment then append the pass number to the experiment
 # name (e.g. M87)
-experiment = bw115a     
-userno = 1004          
+experiment = bl250     
+userno = 1005          
 
 # refant is a prioritised list of reference antennas
 refant = LA
 
 # plotref is a list of antennas, baselines to which will be plotted.
-plotref = SC
+plotref = PT
 
 # bpass is a list of sources for bandpass calibration
-bpass = 3C274
+bpass = 3C273
 
 # phaseref and target must be set if phase referencing. Each source in target
 # list will be phase calibrated by the corresponding source in phaseref list.
-phaseref = 3C279
-target = 3C274 
+phaseref = 3C273
+target = M87
 
 # solint defaults to typical scan length on phase calibrator. Must be set if
 # not phase referencing.
@@ -33,16 +33,16 @@ target = 3C274
 
 # directories default to $IN/<experiment>, $OUT/<experiment>,
 # $PIPEFITS/<experiment>
-fitsdir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/BW115A
+fitsdir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/BL250
 #/share/data/askap/bqlao/EAVN/EAVN_pipeline/data 
-indir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/BW115A
+indir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/BL250
 #/share/data/askap/bqlao/EAVN/EAVN_pipeline/data
-outdir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/BW115A
+outdir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/BL250
 #/share/data/askap/bqlao/EAVN/EAVN_pipeline/data
 
 # fits_file defaults to EVN archive standard names. Do not give the full path
 # (the directory will be taken from the fitsdir parameter)
-fits_file = bw115a.idifits
+fits_file = bl250f.idifits
 
 # sciter is the no of iterations of selfcal - defaults to 2 (0 is a valid
 # input, not default)
@@ -92,10 +92,10 @@ fit_ant =
 interferometer = VLBA
 
 #EOP file directory
-eop_path = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/BW115A/ 
+eop_path = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/BL250/ 
 
 # TECU model
 TECU_model = jplg
 
 #TEC directory
-tecdir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/BW115A/ 
+tecdir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/BL250/ 
