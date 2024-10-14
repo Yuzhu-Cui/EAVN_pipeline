@@ -184,7 +184,7 @@ def difmap_imaging(vis_file, out_dir, flag_ant,
                    clean_sigma,
                    map_size,
                    pixel_size,
-                   clean_win_file, target_name):
+                   clean_win_file, target_name, xyrange):
     print('Start imaging processing ... ...')    	
     difmap = subprocess.Popen("difmap", stdin=subprocess.PIPE, stdout=logfile)
     print('read data')
@@ -272,12 +272,16 @@ def difmap_imaging(vis_file, out_dir, flag_ant,
     difmap.stdin.write(("delwin" + "\n").encode())
     difmap.stdin.write(("device /NULL" + "\n").encode())
     difmap.stdin.write(("mapl" + "\n").encode())
+    if xyrange != None:
+       difmap.stdin.write(("xyrange %s" % xyrange + "\n").encode())
+
     difmap.stdin.write(("mapcolor color" + "\n").encode())
     difmap.stdin.write(("cmul=3*imstat(rms)" + "\n").encode())
     difmap.stdin.write(("levs=-1,1.00,1.41,2.00,2.83,4.00,5.65,7.99,11.30,15.98,22.60,31.95,45.18,63.88,90.33,127.73,180.61,255.38,361.11,510.61,722.00,1020.91,1443.57" + "\n").encode())
     #Save image
     difmap.stdin.write(("device %s/%s.ps/vcps" % (out_dir,target_name) + "\n").encode())
-    difmap.stdin.write(("mapl cln" + "\n").encode())    
+    difmap.stdin.write(("mapl cln" + "\n").encode())   
+ 
     difmap.stdin.write(("print \"MARKING_STRING\";print peak(flux);print imstat(rms);print cmul;print imstat(bmin);print imstat(bmaj);print imstat(bpa);print \"END_MARKING\"" + "\n").encode())
     difmap.stdin.write(("save %s/%s" % (out_dir, target_name) + "\n").encode())
     difmap.stdin.write(("exit\n\n").encode())
@@ -502,7 +506,8 @@ cleansigma = int(control['cleansigma'][0])
 mapsize = int(control['mapsize'][0])
 pixelsize = float(control.get('pixelsize', [0])[0])
 interferometer = control.get('interferometer', [])[0]
-x_range = control['xrange'][0]
+xyrange  = control.get('xyrange', [])
+xyrange = '%s,%s,%s,%s' % (xyrange[0], xyrange[1], xyrange[2], xyrange[3])
 
 if interferometer == 'EAVN':
    #1. strong point source processing
@@ -531,7 +536,7 @@ if interferometer == 'EAVN':
                       clean_sigma=cleansigma,
                       map_size=mapsize,
                       pixel_size=pixelsize,
-                      clean_win_file=cleanwinfile, target_name=targetsource)
+                      clean_win_file=cleanwinfile, target_name=targetsource, xyrange=xyrange)
    
    #os.system('ps2pdf ./data/%.ps')
    plot_cleanimage('%s/%s.fits' % (outdir, targetsource))

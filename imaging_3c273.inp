@@ -17,7 +17,7 @@ targetsource = '3C273'
 outdir = ./data
 
 # map size 
-mapsize = 2048
+mapsize = 4096
 
 # pixel size       
 pixelsize = 0.02
@@ -31,8 +31,5 @@ cleansigma = 8
 # name of the interferometer
 interferometer = EAVN
 
-# xy range xa
-xyrange = '-25,10,-25,10'
-
-
-
+#xy range
+xyrange = '-20,10,-20,10'
