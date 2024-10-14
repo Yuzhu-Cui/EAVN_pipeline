@@ -272,7 +272,8 @@ def difmap_imaging(vis_file, out_dir, flag_ant,
     difmap.stdin.write(("delwin" + "\n").encode())
     difmap.stdin.write(("device /NULL" + "\n").encode())
     difmap.stdin.write(("mapl" + "\n").encode())
-    if xyrange != None:
+    if xyrange[0] != '':
+       xyrange = '%s,%s,%s,%s' % (xyrange[0], xyrange[1], xyrange[2], xyrange[3])
        difmap.stdin.write(("xyrange %s" % xyrange + "\n").encode())
 
     difmap.stdin.write(("mapcolor color" + "\n").encode())
@@ -507,7 +508,7 @@ mapsize = int(control['mapsize'][0])
 pixelsize = float(control.get('pixelsize', [0])[0])
 interferometer = control.get('interferometer', [])[0]
 xyrange  = control.get('xyrange', [])
-xyrange = '%s,%s,%s,%s' % (xyrange[0], xyrange[1], xyrange[2], xyrange[3])
+
 
 if interferometer == 'EAVN':
    #1. strong point source processing

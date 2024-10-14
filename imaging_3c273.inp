@@ -16,10 +16,10 @@ targetsource = '3C273'
 # out directory
 outdir = ./data
 
-# map size 
+# map size in pixel 
 mapsize = 4096
 
-# pixel size       
+# pixel size in mas    
 pixelsize = 0.02
 
 # clean gain
@@ -31,5 +31,5 @@ cleansigma = 8
 # name of the interferometer
 interferometer = EAVN
 
-#xy range
+#xy range in mas
 xyrange = '-20,10,-20,10'

@@ -406,7 +406,7 @@ def EAVN_ampcal(antab_file, uvdata):
         uvdata.zap_table('AIPS CL', 0)
     uvdata.zap_table('AIPS TY', -1)
     uvdata.zap_table('AIPS GC', -1)
-
+    antenna_nums = len(uvdata.antennas)
     #run ACCOR --> SN 1
     if interferometer == 'EAVN':
        solint = -1
@@ -416,7 +416,7 @@ def EAVN_ampcal(antab_file, uvdata):
        solint = 0 
     runaccor(uvdata, solint)    
     uvdata.zap_table('AIPS PL', -1)
-    runsnplt(uvdata, 'SN', 1, 'AMP') 
+    runsnplt(uvdata, 'SN', 1, 'AMP', nplots=antenna_nums) 
     plot(uvdata, def_name('SN1'), dopng=dopng)
 
     #run CLCAL --> CL 2
@@ -447,7 +447,7 @@ def EAVN_ampcal(antab_file, uvdata):
 
 
     uvdata.zap_table('AIPS PL', -1)
-    runsnplt(uvdata, 'TY', 1, 'TSYS')
+    runsnplt(uvdata, 'TY', 1, 'TSYS', nplots=antenna_nums)
     plot(uvdata, def_name('TSYS'), dopng=dopng)
 
     #Generate SN 2-4 table
@@ -455,15 +455,15 @@ def EAVN_ampcal(antab_file, uvdata):
     len_ants = len(uvdata.antennas)
     runapcal(indata=uvdata, tyver=1, gcver=1, snver=2, freqid=1, opcode='grid', ant_id=ant_id, len_ants=len_ants)
     uvdata.zap_table('AIPS PL', -1)
-    runsnplt(uvdata, 'SN', 2, 'AMP')
+    runsnplt(uvdata, 'SN', 2, 'AMP', nplots=antenna_nums)
     plot(uvdata, def_name('SN2'), dopng=dopng)
     runapcal(indata=uvdata, tyver=1, gcver=1, snver=3, freqid=1, opcode='opac', ant_id=ant_id, len_ants=len_ants)
     uvdata.zap_table('AIPS PL', -1)
-    runsnplt(uvdata, 'SN', 3, 'AMP')
+    runsnplt(uvdata, 'SN', 3, 'AMP', nplots=antenna_nums)
     plot(uvdata, def_name('SN3'), dopng=dopng)
     runapcal(indata=uvdata, tyver=1, gcver=1, snver=4, freqid=1, opcode='lesq', ant_id=ant_id, len_ants=len_ants)
     uvdata.zap_table('AIPS PL', -1)
-    runsnplt(uvdata, 'SN', 4, 'AMP')
+    runsnplt(uvdata, 'SN', 4, 'AMP', nplots=antenna_nums)
     plot(uvdata, def_name('SN4'), dopng=dopng)
     # use 'box', dobtween and doblank so no sources get left out
     runclcal(gainver=2, gainuse=3, indata=uvdata, snver=3,
@@ -471,7 +471,7 @@ def EAVN_ampcal(antab_file, uvdata):
             samptype='', inver=3)
 
     uvdata.zap_table('AIPS PL', -1)
-    runsnplt(uvdata, 'CL', 3, 'AMP')
+    runsnplt(uvdata, 'CL', 3, 'AMP', nplots=antenna_nums)
     plot(uvdata, def_name('GAIN'), dopng=dopng)
 
     # Do the parallactic angle correction.
@@ -479,7 +479,7 @@ def EAVN_ampcal(antab_file, uvdata):
 
 def EAVN_fring(fringdata, rmcalsour):
     # run fring (on averaged data set if necessary)
-
+    
     aparm = []
     aparm[1:] = [0 for i in range(10)]
     aparm[6] = 2
@@ -497,7 +497,8 @@ def EAVN_fring(fringdata, rmcalsour):
             aparm=aparm, dparm=dparm, snr=fring_snr)
 
     uvdata.zap_table('AIPS PL', -1)
-    runsnplt(uvdata, 'SN', 5, 'AMP')
+    antenna_nums = len(uvdata.antennas) 
+    runsnplt(uvdata, 'SN', 5, 'AMP', nplots=antenna_nums)
     plot(uvdata, def_name('SN5'), dopng=dopng)
     # apply the fring solutions CL3=>CL4
     calibrator = phaseref_sources

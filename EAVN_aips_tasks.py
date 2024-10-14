@@ -343,7 +343,7 @@ def runclcal(snver, indata, refant, gainver=0, gainuse=0, opcode='CALI',
     logger.info('Task CLCAL appears to have ended successfully')
 
 def runsnplt(indata, inext='SN', invers=0, optype='PHAS', dotv=-1, antennas=[],
-            bif=0, eif=0, sources=[]):
+            bif=0, eif=0, sources=[], nplots=10, opcode='ALSI'):
 
     '''Must set indata'''
     #assert(indata != None)
@@ -360,7 +360,8 @@ def runsnplt(indata, inext='SN', invers=0, optype='PHAS', dotv=-1, antennas=[],
     snplt.sources[1:] = sources
     snplt.bif = bif
     snplt.eif = eif
-    snplt.nplots = 10
+    snplt.nplots = nplots
+    snplt.opcode = opcode
     snplt.factor = 0.5
     #snplt.doebar = -1.
     snplt.cutoff = 1e-6
@@ -373,7 +374,7 @@ def runsnplt(indata, inext='SN', invers=0, optype='PHAS', dotv=-1, antennas=[],
     logger.info('Task SNPLT appears to have ended successfully')
     return error
 
-def runapcal(indata, tyver=1, gcver=1, snver=1, freqid=1, opcode='grid', ant_id=7, len_ants=7, interferometer='EAVN'):
+def runapcal(indata, tyver=1, gcver=1, snver=1, freqid=1, opcode='lesq', ant_id=7, len_ants=7, interferometer='EAVN'):
     """Must set indata"""
     #assert (indata != None)
     logger.info('Task APCAL  (release of 31DEC24) begins')
