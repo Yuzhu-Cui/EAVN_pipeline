@@ -9,8 +9,31 @@ from astropy.io import fits
 from astropy import wcs
 import aplpy 
 import numpy as np
+import matplotlib
+from matplotlib.colors import SymLogNorm
+from matplotlib.patches import Ellipse
+from matplotlib.ticker import FormatStrFormatter
 
 logfile = open("difmap.log", "w")
+
+def pix2word(header,xy,core_xy):
+    x,y = xy
+    x = header['CDELT1']*3.6E6*(x-core_xy[0])
+    y = header['CDELT2']*3.6E6*(y-core_xy[1])
+    return x[0],y[0]
+
+#find the lower and upper limits of X-axis and Y-axis in WCS 'mas' units for plotting (left, right, bottom, top):
+def pixelwin2maswin(header,core_xy,win=()):
+    if len(win)==4:
+        x0, x1, y0, y1 = win
+    else:
+        x0, y0 = 0, 0
+        x1, y1 = header['naxis1'], header['naxis2']
+    x0, y0 = pix2word(header,(x0,y0),core_xy)
+    x1, y1 = pix2word(header,(x1,y1),core_xy)
+    win_mas = x0, x1, y0, y1
+    return win_mas
+
 
 
 def get_latest_log(log_dir):
@@ -24,28 +47,75 @@ def get_latest_log(log_dir):
                 latest_log = filename
     return latest_log
 
-def plot_cleanimage(fitsfile):
+def plot_cleanimage(fitsfile, xyrange):
     hdu= fits.open(fitsfile)[0]
-    data = hdu.data[:,:]
-    img = hdu.data[:,:]
-    img = np.nan_to_num(img)
+    if len(hdu.data.shape) == 4:
+       data = hdu.data[0,0,:,:]
+    else:
+       data = hdu.data[:,:]
+    img = data 
     w1=wcs.WCS(hdu.header, naxis=2)
-    temp = fits.PrimaryHDU(data=data, header=w1.to_header())   
+    header = hdu.header
+    cra = header['CRVAL1'] #RA in deg
+    cdec = header['CRVAL2']
+    #print(img.shape)
+    core_x, core_y = w1.wcs_world2pix([[cra,cdec]],0).transpose()
+    core_xy = [core_x, core_y]
+    win_mas = pixelwin2maswin(header,core_xy)
+    
+    rms =1.3* np.median(abs(img-np.median(img)))
+    
+    fig, ax = plt.subplots(figsize=(7,5))
 
-    rms =0.9* np.median(abs(img-np.median(img)))
+    #norm=SymLogNorm(linthresh=10*rms)
+    #print(win_mas)
+    im = ax.imshow(img, vmin=-0.1,vmax=np.max(img), 
+          extent=win_mas, origin='lower', cmap='jet', interpolation='none')
 
-    f=aplpy.FITSFigure(temp, slices=[0])
-    #f.show_colorscale(cmap='gray')
+    levs_positive = 3*rms*np.array([1,np.sqrt(2),2,np.sqrt(2)*2,4,4*np.sqrt(2),8,8*np.sqrt(2),16,16*np.sqrt(2),32,32*np.sqrt(2),64,64*np.sqrt(2),128,128*np.sqrt(2),256,256*np.sqrt(2)])
+    levs_negative = 3*rms*np.array([-1])   
+    
+    ax.contour(img,levs_positive,extent=win_mas,linestyles='solid',linewidths=1,colors='w')
+    ax.contour(img,levs_negative,extent=win_mas,linestyles='dashed',linewidths=0.5,colors='r')
+    ax.set_xlabel('Relative RA (mas)',fontsize=20)
+    ax.set_ylabel('Relative Dec (mas)',fontsize=20,labelpad=0.01)
+    ax.set_aspect('equal')
 
-    levs_positive = 5*rms*np.array([1,np.sqrt(2),2,np.sqrt(2)*2,4,4*np.sqrt(2),8,8*np.sqrt(2),16,16*np.sqrt(2),32,32*np.sqrt(2),64,64*np.sqrt(2),128,128*np.sqrt(2),256,256*np.sqrt(2)])
-    levs_negative = 3*rms*np.array([-1])    
-    f.show_contour(img,dimensions=[0,1],colors='k',zorder=5,levels=levs_positive,slices=[0]) 
-    f.axis_labels.set_xtext('Right Ascension (J2000)')
-    f.axis_labels.set_ytext('Declination (J2000)')
-    f.axis_labels.set_font(size=24, weight='medium', stretch='normal', family='sans-serif', style='normal', variant='normal')
-    plt.tick_params(axis='both',direction='in',color='black', labelsize=14)
-    f.tick_labels.set_font(size=20, weight='medium', stretch='normal', family='sans-serif', style='normal', variant='normal')
-    f.save(fitsfile.replace('.fits', '.png'))
+    #Set the colorbar
+    cbar = fig.colorbar(im,aspect=25)
+    cbar.ax.minorticks_off() ## IMPORTANT
+    cbar.ax.tick_params('both',direction='in',right=True,top=True,which='both',labelsize = 20)
+    #cbar.set_ticks([1,2,4,8,16,25])
+    #cbar.set_ticklabels([1,2,4,8,16,25])
+    #cbar.ax.set_position([0.88,0.08,0.2,0.9])
+    cbar.set_label('Jy/beam',fontsize=20)
+
+    #Specify tick label (value) font size
+    ax.tick_params(axis = 'both', which = 'major', labelsize = 20)
+    
+    #set the format of the major tick label
+    #It should be similar to C-programming format syntex.
+    #Use 'd' for decimal, 'f' for float, and 's' for string valued ticks.
+    ax.xaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%d'))
+    ax.yaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%d'))
+
+
+    #Set the values ranges for x and y axes:
+    k= 20
+    xyrange = [int(xyrange[1]), int(xyrange[0]), int(xyrange[2]), int(xyrange[3])]
+    ax.set_xlim(xyrange[0],xyrange[1])
+    ax.set_ylim(xyrange[2],xyrange[3])
+    
+    #Add beam:
+    b = (xyrange[0]-1.5*header['BMAJ']*3.6E6,xyrange[2]+1.5*header['BMAJ']*3.6E6,header['BMAJ']*3.6E6,header['BMIN']*3.6E6,header['BPA'])
+    ellp = Ellipse(xy=(xyrange[1]+b[2]/2,xyrange[2]+b[3]*(1.2)),width=b[2],height=b[3],angle=90-b[4],ec='k',facecolor='grey')
+    ax.add_artist(ellp)
+    
+    plt.tick_params(labelsize=20)
+    labels = ax.get_xticklabels() + ax.get_yticklabels()
+    [label.set_fontname('Times New Roman') for label in labels]
+
+    fig.savefig(fitsfile.replace('.fits', '.png'), bbox_inches = 'tight')
 
 def parse_inp(filename):
     # form a hash of parameter names and values parsed from an input file.
@@ -540,7 +610,7 @@ if interferometer == 'EAVN':
                       clean_win_file=cleanwinfile, target_name=targetsource, xyrange=xyrange)
    
    #os.system('ps2pdf ./data/%.ps')
-   plot_cleanimage('%s/%s.fits' % (outdir, targetsource))
+   plot_cleanimage('%s/%s.fits' % (outdir, targetsource), xyrange)
 
 if interferometer == 'VLBA':
    # target source imaging

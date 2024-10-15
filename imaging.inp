@@ -32,4 +32,4 @@ cleansigma = 8
 interferometer = EAVN
 
 #xy range
-xyrange =  
+xyrange = '-10,10,-10,10' 
