@@ -385,18 +385,57 @@ def EAVN_plot2a(uvdata):
         runpossm(indata=uvdata, aparm=aparm, stokes=plotstokes, solint=0, bpver=1, gainuse=2)
         plot(uvdata, def_name('BANDPASS'), dopng=dopng)
 
+
+def EVN_plot2a(uvdata):
+    uvdata.zap_table('AIPS PL', -1)
+
+    # plot the bandpass table
+    if nbp_table:
+        aparm = set_default_aparms('possm')
+        aparm[4] = 1.3
+        aparm[5:7] = [0, 0]
+        aparm[8] = 2
+        runpossm(indata=uvdata, aparm=aparm, stokes=plotstokes, solint=0)
+        plot(uvdata, def_name('BANDPASS'), dopng=dopng)
+
+    antenna_nums = len(uvdata.antennas)
     # plot the fringe solutions
-    #uvdata.zap_table('AIPS PL', -1)
-    #runsnplt(uvdata, 'CL', 3, 'PHAS')
-    #plot(uvdata, def_name('FRING_PHAS'), dopng=dopng)
+    uvdata.zap_table('AIPS PL', -1)
+    runsnplt(uvdata, 'CL', 3, 'PHAS', nplots=antenna_nums)
+    plot(uvdata, def_name('FRING_PHAS'), dopng=dopng)
 
-    #uvdata.zap_table('AIPS PL', -1)
-    #runsnplt(uvdata, 'SN', 2, 'DELA')
-    #plot(uvdata, def_name('FRING_DELAY'), dopng=dopng)
+    uvdata.zap_table('AIPS PL', -1)
+    runsnplt(uvdata, 'SN', 2, 'DELA', nplots=antenna_nums)
+    plot(uvdata, def_name('FRING_DELAY'), dopng=dopng)
 
-    #uvdata.zap_table('AIPS PL', -1)
-    #runsnplt(uvdata, 'SN', 2, 'RATE')
-    #plot(uvdata, def_name('FRING_RATE'), dopng=dopng)
+    uvdata.zap_table('AIPS PL', -1)
+    runsnplt(uvdata, 'SN', 2, 'RATE', nplots=antenna_nums)
+    plot(uvdata, def_name('FRING_RATE'), dopng=dopng)
+
+def EVN_plot2b(uvdata):
+    uvdata.zap_table('AIPS PL', -1)
+
+    # plot the calibrated data versus frequency
+    aparm = set_default_aparms('possm')
+    aparm[1] = 1        # vector average 
+    aparm[5] = 0
+    aparm[6] = 0
+    uvdata.zap_table('AIPS PL', -1)
+    runpossm(indata=uvdata, aparm=aparm, docalib=1, doband=nbp_table,
+            antennas=plotref, stokes=plotstokes)
+    plot(uvdata, def_name('POSSM_CAL'), dopng=dopng)
+
+    # plot the calibrated data versus time
+    bparm = set_default_bparms('vplot')
+    uvdata.zap_table('AIPS PL', -1)
+    for poln in polarizations:
+        for incif in range(1, nif+1):
+            error = runvplot(indata=uvdata, bparm=bparm, antenna=plotref,
+                    bif=incif, eif=incif, docalib=1, doband=nbp_table,
+                    stokes=poln+poln, solint=plotavg)
+            if (error):
+                print_vplot_err(incif, incif, poln+poln, uvdata)
+    plot(uvdata, def_name('VPLOT_CAL'), dopng=dopng)
 
 
 def EAVN_ampcal(antab_file, uvdata):
@@ -524,7 +563,7 @@ def EVN_ampcal(antab_file, uvdata):
     cl_hv = uvdata.table_highver('CL')
     sn_hv= uvdata.table_highver('SN')
     # Do the parallactic angle correction.
-    runclcor(indata=uvdata, clcorprm=[0,1], opcode='PANG', gainver=cl_hv, gainuse=cl_hv+1)
+    runclcor_pang(indata=uvdata, gainver=cl_hv, gainuse=cl_hv+1)
 
 def EAVN_fring(fringdata, rmcalsour):
     # run fring (on averaged data set if necessary)
@@ -573,9 +612,9 @@ def EVN_fring(fringdata):
       
     cl_hv = uvdata.table_highver('CL')
     sn_hv= uvdata.table_highver('SN')
-    runfring (indata=fringdata, gainuse=cl_hv, refantlist=refantlist, snver=sn_hv+1, 
+    runfring(indata=fringdata, gainuse=cl_hv, refant=refantlist[0], snver=sn_hv+1, 
             solint=solint, calsour=selfcal_sources,
-            aparm=aparm, dparm=dparm, snr=fring_snr)
+            aparm=aparm, dparm=dparm, snr=fring_snr, interferometer='EVN')
     #runsnsmo(indata=uvdata, refant=refantlist[0], invers=2, smotype='VLBI',
     #        smotime=solint*6.)
 
@@ -758,6 +797,7 @@ if interferometer == 'EAVN':
            runfittp(indata=splitdata, outfile=fitsoutfile)
    
        logger.info('Ending tmask 7')
+   logger.info('Ending data calibration') 
 
 if interferometer == 'VLBA':
    # 3, Calibrate Ionospheric Delay and Fix Earth Orientation Parameters
@@ -1025,6 +1065,7 @@ if interferometer == 'VLBA':
            runfittp(indata=splitdata, outfile=fitsoutfile)
 
        logger.info('Ending tmask 10')
+   logger.info('Ending data calibration')
 
 if interferometer == 'EVN':
    # 2, A priori data flagging 
@@ -1080,7 +1121,8 @@ if interferometer == 'EVN':
        sn_hv= uvdata.table_highver('SN')
        fg_hv = uvdata.table_highver('FG')
        table_vers(uvdata=uvdata, cl=cl_hv, sn=sn_hv, fg=fg_hv, bp=0)
-   
+       logger.info('Before tmask 5: CL table %d, SN table %d, FG table %d' % (cl_hv, sn_hv, fg_hv))
+       logger.info('Running fring')
        EVN_fring(uvdata)
        cl_hv = uvdata.table_highver('CL')
        sn_hv= uvdata.table_highver('SN')
@@ -1089,92 +1131,70 @@ if interferometer == 'EVN':
        logger.info('Ending tmask 5')
    
    
-   ## 6, Bandpass calibration
-   #if tmask[0] <= 6 <= tmask[1] and nbp_table:
-   #    print_start('6, bandpass calibration')
-   #    table_vers(uvdata=uvdata, cl=3, sn=2, fg=1, bp=0)
-   #
-   #    runbpass(refant=refantlist[0],indata=uvdata, calsour=bpass_calibrators)
-   #    # Do the less time consuming plots now
-   #    evn_plot2a(uvdata)
-   #    print_end('6')
-   #
-   #
-   ## 7, Plot the results after ampcal, fringe fitting and bandpass
-   #if tmask[0] <= 7 <= tmask[1] and doplot:
-   #    print_start('7, plot calibrated data vs time and frequency' )
-   #    table_vers(uvdata=uvdata, cl=3, sn=2, fg=1, bp=nbp_table)
-   #
-   #    evn_plot2b(uvdata)
-   #    print_end('7')
-   #
-   ## 8, Split
-   #if tmask[0] <= 8 <= tmask[1]:
-   #    print_start('8, split the calibrated data')
-   #    table_vers(uvdata=uvdata, cl=3, sn=2, fg=1, bp=nbp_table)
-   #
-   #    for source in sources:
-   #        splitdata = AIPSUVData(source.upper(), 'SPLIT', uvdata.disk, 1)
-   #        zap_old_data(splitdata)
-   #
-   #    runsplit(sources=sources.keys(), indata=uvdata, gainuse=3,
-   #            doband=nbp_table, bpver=nbp_table, outseq=1)
-   #
-   #    print_end('8')
-   #
-   ## 9, create multi files and make dirty maps and first clean maps
-   #if tmask[0] <= 9 <= tmask[1]:
-   #    print_start('9, create multi files and make first maps')
-   #    evn_multi(uvdata, sources, target_sources)
-   #
-   #    print_end('9')
-   #
-   #
-   ## 10, continue mapping
-   #if tmask[0] <= 10 <= tmask[1]:
-   #    print_start('10, iterate self-cal and imaging')
-   #    evn_map()
-   #    print_end('10')
-   #
-   ## 11, plot the final data
-   #if tmask[0] <= 11 <= tmask[1] and doplot:
-   #    print_start('11, plot the final self-calibrated data')
-   #    evn_plot3()
-   #    print_end('11')
-   #
-   ## 12, calculate the antenna sensitivities
-   #if tmask[0] <= 12 <= tmask[1]:
-   #    print_start('''12, calculate the antenna sensitivities (using selfcal
-   #            results)''')
-   #    if nselfcal > 1:
-   #        evn_sens(uvdata, selfcal_sources)
-   #    else:
-   #        print >>PYPELOG, '''No amplitude self-cal was done, so no sensitivity
-   #            plots can be made (skipping tmask 12)'''
-   #
-   #    print_end('12')
-   #
-   ## 13, save useful data and plot final map
-   #if tmask[0] <= 13 <= tmask[1]:
-   #    print_start('13, save useful data and plot final map')
-   #    table_vers(uvdata=uvdata, cl=3, sn=2, fg=1, bp=nbp_table)
-   #
-   #    evn_save(uvdata)
-   #    print_end('13')
-   #    print >>PYPELOG, '*' * 20
-   #    print >>PYPELOG, "Pipeline has completed and data are saved - now archive it"
-   #    print >>PYPELOG, '*' * 20
-   #
-   #
-   ## now wait for the pids of the child plot conversion processes to finish
-   #for pid in evn_funcs.pid_list:
-   #    print >>PYPELOG, '\n\nWaiting for the child process ( pid = ', pid, ') to'\
-   #            ' finish...\n'
-   #    os.waitpid(pid, 0)
-   #
-   ##print 'sources =\n', pprint.pformat(sources)
-   #
-   #print >>PYPELOG, '*' * 20
-   #print >>PYPELOG, "The pipeline has ended normally at ", time.asctime()
-   #print >>PYPELOG, '*' * 20
-   #print >>PYPELOG, "\n\n" 
+   # 6, Bandpass calibration
+   if tmask[0] <= 6 <= tmask[1] and nbp_table:
+       logger.info('Start tmask 6, bandpass calibration')
+       cl_hv = uvdata.table_highver('CL')
+       sn_hv= uvdata.table_highver('SN')
+       fg_hv = uvdata.table_highver('FG')
+       logger.info('Before tmask 6: CL table %d, SN table %d, FG table %d' % (cl_hv, sn_hv, fg_hv))
+       table_vers(uvdata=uvdata, cl=cl_hv, sn=sn_hv, fg=fg_hv, bp=0)
+       logger.info('Running bpass')
+       runbpass(refant=refantlist[0],indata=uvdata, calsour=bpass_calibrators)
+       cl_hv = uvdata.table_highver('CL')
+       sn_hv= uvdata.table_highver('SN')
+       fg_hv = uvdata.table_highver('FG')
+       bp_hv = uvdata.table_highver('BP')
+       logger.info('Ending bpass: CL table %d, SN table %d, FG table %d, BP table %d' % (cl_hv, sn_hv, fg_hv, bp_hv))
+       logger.info('Do the less time consuming plots now')
+       # Do the less time consuming plots now
+       EVN_plot2a(uvdata)
+       logger.info('Ending tmask 6')
+   
+   
+   # 7, Plot the results after ampcal, fringe fitting and bandpass
+   if tmask[0] <= 7 <= tmask[1] and doplot:
+       logger.info('Start tmask 7, plot calibrated data vs time and frequency')
+       cl_hv = uvdata.table_highver('CL')
+       sn_hv= uvdata.table_highver('SN')
+       fg_hv = uvdata.table_highver('FG')
+       bp_hv = uvdata.table_highver('BP')
+       logger.info('Before tmask 7: CL table %d, SN table %d, FG table %d, BP table %d' % (cl_hv, sn_hv, fg_hv, bp_hv))
+       
+       table_vers(uvdata=uvdata, cl=cl_hv, sn=sn_hv, fg=fg_hv, bp=nbp_table)
+   
+       EVN_plot2b(uvdata)
+       logger.info('Ending tmask 7')
+
+   # 8, Split
+   if tmask[0] <= 8 <= tmask[1]:
+       logger.info('Starting tmask 8: split the calibrated data')
+       cl_hv = uvdata.table_highver('CL')
+       sn_hv= uvdata.table_highver('SN')
+       bp_hv = uvdata.table_highver('BP')
+       logger.info('Before tmask 8: CL table %d, SN table %d, BP table %d' % (cl_hv, sn_hv, bp_hv))
+
+       table_vers(uvdata=uvdata, cl=cl_hv, sn=sn_hv, fg=0, bp=bp_hv)
+       sources = list(sources)
+       for source in sources:
+           splitdata = AIPSUVData(source, 'SPLIT', uvdata.disk, 1)
+           zap_old_data(splitdata)
+       logger.info('Running split')
+       runsplit(sources=sources, indata=uvdata, gainuse=cl_hv, docalib=1,
+               doband=nbp_table, bpver=nbp_table) #, outseq=1)
+
+       logger.info('Ending tmask 8')
+
+   # 9, Save the split data as fits
+   if tmask[0] <= 9 <= tmask[1]:
+       logger.info('Starting tmask 9: split the calibrated data')
+       for source in sources:
+           splitdata = AIPSUVData(source, 'SPLIT', uvdata.disk, 1)
+           fitsoutfile = output_prefix + '_' + source + \
+                               '.UVDATA.FITS'
+           save_old_file(fitsoutfile)
+           runfittp(indata=splitdata, outfile=fitsoutfile)
+
+       logger.info('Ending tmask 9')
+   logger.info('Ending data calibration') 
+

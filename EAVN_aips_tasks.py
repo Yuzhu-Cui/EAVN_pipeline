@@ -328,12 +328,12 @@ def runclcal(snver, indata, refant, gainver=0, gainuse=0, opcode='CALI',
     #clcal.subarray = 1
     clcal.calsour[1:] = calsour
     clcal.sources[1:] = sources
-    #clcal.opcode = opcode
+    clcal.opcode = opcode
     clcal.interpol = interpol
     #clcal.intparm = 0.00001
     clcal.samptype = samptype
-    #clcal.doblank = doblank
-    #clcal.dobtween = dobtween
+    clcal.doblank = doblank
+    clcal.dobtween = dobtween
     clcal.refant = refant
     clcal.snver = snver
     clcal.inver = inver
@@ -469,17 +469,21 @@ def runfring(indata, snver, solint, aparm, dparm, refant, freqid=1,
     fring.outdata = indata
     #fring.freqid = freqid
     fring.gainuse = gainuse
-    fring.bpver = 1
-    fring.doband = 1
-    #fring.flagver = flagver
-    fring.docalib = 1
+    if interferometer=='EAVN' or interferometer=='VLBA':
+       fring.bpver = 1
+       fring.doband = 1
+       #fring.flagver = flagver
+       fring.docalib = 1
+    else:
+       fring.flagver = 1
+       fring.docalib = 2
     #fring.subarray = 1
     fring.refant = refant
     #fring.search[1:] = refantlist[1:]
     fring.snver = snver
     fring.solint = solint
     fring.calsour[1:] = calsour
-    if interferometer=='EAVN':
+    if interferometer=='EAVN' or interferometer=='EVN':
        fring.aparm[1:] = aparm[1:]
        fring.aparm[7] = snr
        fring.dparm[1:] = dparm[1:]
@@ -694,6 +698,7 @@ def runtacop(indata,inext='SN',invers=0,outvers=0):
     tacop()
 
 def runclcor_pang(indata, gainver, gainuse):
+    logger.info('Task clcor_pang  (release of 31DEC24) begins')
     clcor = AIPSTask('clcor')
     clcor.indata = indata
     clcor.gainver = gainver
@@ -702,4 +707,4 @@ def runclcor_pang(indata, gainver, gainuse):
     clcor.clcorprm[1] = 1
     clcor.clcorprm[2:] = [0]
     clcor()
-
+    logger.info('Task CLCOR_PANG appears to have ended successfully')
