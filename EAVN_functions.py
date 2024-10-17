@@ -53,8 +53,8 @@ def create_image(uvdata, imgdata, niter, uvwtfn, dotv=-1, stokes='I',
     zap_old_data(beamdata)
 
     cellsize = getcell(uvdata)
-    print >>FuncLog, 'number pixels=', imsize
-    print >>FuncLog, 'pixel size=', cellsize*1.e3, 'mas'
+    logger.info('number pixels=%d' % imsize)
+    logger.info('pixel size=%f mas' % (cellsize*1.e3))
     nchan = uvdata.header.naxis[2]
 
     runimagr(indata=uvdata, source=uvdata.name, cellsize=cellsize, niter=niter,
@@ -71,9 +71,9 @@ def create_image(uvdata, imgdata, niter, uvwtfn, dotv=-1, stokes='I',
     if dotv > 0:
         peakflux, rmsflux = plotmap(imgdata, dotv=dotv)
 
-    print >>FuncLog, 'peak flux=', peakflux
-    print >>FuncLog, 'rms flux=', rmsflux
-    print >>FuncLog, 'dynamic range=', peakflux/rmsflux
+    logger.info('peak flux= %f' % peakflux)
+    logger.info('rms flux=%f' % rmsflux)
+    logger.info('dynamic range=%f' % peakflux/rmsflux)
 
     return peakflux, rmsflux
 
@@ -304,10 +304,8 @@ def selfcal_map(uvdata, source, nsc, solint, refant, ncc=300, prefix='',
             solmode = 'A&P'
             plottype = 'AMP'
 
-        print >>FuncLog, "selfcal iteration ", i+1, \
-                ' using solmode= ', solmode, ' and source model ', \
-                aipsuvname(imgdata)
-        print >>FuncLog, "selfcal solint=", selfcal_solint
+        logger.info('selfcal iteration %d using solmode= %s and source model %s' % (i+1, solmode, aipsuvname(imgdata)))
+        logger.info("selfcal solint= %s" % selfcal_solint)
 
 
         runcalib(indata=uvdata, in2data=imgdata, docalib=2, ncomp=ncc,
@@ -324,10 +322,8 @@ def selfcal_map(uvdata, source, nsc, solint, refant, ncc=300, prefix='',
         uvdata.zap_table('AIPS PL', -1)
         error = runsnplt(indata=uvdata, inext='SN', invers=0, optype=plottype)
         if error:
-            print >>FuncLog, '\nPype warning, SNPLT failed for SN= ', i+1, \
-                    ', source= ', source
-            print >>FuncLog, '\nPype warning, aborting the mapping for'  \
-                    ' source: ', source
+            logger.info('Pype warning, SNPLT failed for SN= %d source= %s' % (i+1, source))
+            logger.info('Pype warning, aborting the mapping for source: %s' % source)
             break
 
         plotname = get_plotname(prefix, source + '_CALIB_' + plottype +
@@ -345,7 +341,7 @@ def selfcal_map(uvdata, source, nsc, solint, refant, ncc=300, prefix='',
         # next round of imaging
         imgseq += 1
         imgdata = AIPSImage(uvdata.name, 'ICL001', uvdata.disk, imgseq)
-        print >>FuncLog, 'Creating image:', aipsuvname(imgdata)
+        logger.info('Creating image: %s' % aipsuvname(imgdata))
         create_image(uvdata, imgdata, ncc, 'N', dotv=-1)
         plotname = get_plotname(prefix, source + '_ICLN_' + str(imgseq))
         plot(imgdata, plotname, dopng=dopng)
@@ -431,7 +427,7 @@ def vlba_logs(uvdata, vlog_out, vlbacal_file, ifwidth):
     if doglobal:
         assert(os.path.isfile(vlbacal_file)), vlbacal_file + ' does not exist!'
 
-        print >>FuncLog, 'vlog file= ', vlbacal_file
+        logger.info('vlog file= %s' % vlbacal_file)
         # delete any old versions of VLOG output
         vlog_cleanup(vlog_out)
 
@@ -475,8 +471,8 @@ def glue_data(headdata, vbgludata, fxpoldata=None):
         if headdata[headnum]:
             headpols.append( headdata[headnum].polarizations )
 
-    print >>FuncLog, 'VBGLU input files= ', headdata
-    print >>FuncLog, 'pols for each head= ', pprint.pformat(headpols)
+    logger.info('VBGLU input files= %s' % headdata)
+    logger.info('pols for each head= %s' % pprint.pformat(headpols))
 
     runvbglu(indata=headdata[0], in2data=headdata[1], in3data=headdata[2],
             in4data=headdata[3], outdata=vbgludata)
@@ -486,8 +482,8 @@ def glue_data(headdata, vbgludata, fxpoldata=None):
     # if the 'heads' were two pols of the same IFs, then need to run FXPOL
     if headpols[0] != headpols[1]:
         bandpol = "*(" + headpols[0][0] + headpols[1][0] + ")"
-        print >>FuncLog, '\nVBGLU inputs appear to have different pols'
-        print >>FuncLog, 'Running FXPOL with bandpol= ', bandpol
+        logger.info('VBGLU inputs appear to have different pols')
+        logger.info('Running FXPOL with bandpol= %s' % bandpol)
         runfxpol(indata=vbgludata, outdata=fxpoldata, bandpol=bandpol)
         runindxr(fxpoldata)
         uvdata = fxpoldata

@@ -15,10 +15,10 @@ targetsource = '3C274'
 # out directory
 outdir = ./data/BW115A
 
-# map size 
+# map size in pixel
 mapsize = 1024
 
-# pixel size       
+# pixel size in mas
 pixelsize = 0.02
 
 # clean gain
@@ -30,3 +30,5 @@ cleansigma = 6
 # name of the interferometer
 interferometer = VLBA
 
+# xy range in mas
+xyrange = '-5,5,-5,5'

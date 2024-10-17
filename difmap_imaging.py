@@ -13,6 +13,7 @@ import matplotlib
 from matplotlib.colors import SymLogNorm
 from matplotlib.patches import Ellipse
 from matplotlib.ticker import FormatStrFormatter
+import pandas as pd
 
 logfile = open("difmap.log", "w")
 
@@ -46,6 +47,16 @@ def get_latest_log(log_dir):
                 latest_mtime = os.path.getmtime(file_path)
                 latest_log = filename
     return latest_log
+
+def extract_content_between_markers(log_file, start_marker, end_marker):
+    pattern = f'{re.escape(start_marker)}(.*?){re.escape(end_marker)}'
+    with open(log_file, 'r') as file:
+        content = file.read()
+        matches = re.search(pattern, content, re.DOTALL)
+        if matches:
+            return matches.group(1)
+        else:
+            return None
 
 def plot_cleanimage(fitsfile, xyrange):
     hdu= fits.open(fitsfile)[0]
@@ -611,6 +622,35 @@ if interferometer == 'EAVN':
    
    #os.system('ps2pdf ./data/%.ps')
    plot_cleanimage('%s/%s.fits' % (outdir, targetsource), xyrange)
+   logfile.close()
+   log_file = "difmap.log"
+   START_MARKER = "MARKING_STRING"
+   END_MARKER = "END_MARKING"
+   extracted_content = extract_content_between_markers(log_file, START_MARKER, END_MARKER)
+   if extracted_content:
+       #imstat(rms);print cmul;print imstat(bmin);print imstat(bmaj);print imstat(bpa)
+       outputs = extracted_content.split('\n')
+       print('clean map info:')
+       print('peak: %s Jy/beam' % outputs[1])
+       print('rms: %s Jy/beam' % outputs[2])
+       print('cmul: %s Jy/beam' % outputs[3])
+       print('bmaj: %s mas' % outputs[5])
+       print('bmin: %s mas' % outputs[4])
+       print('bpa: %s deg' % outputs[6])
+       data = {'file_name': [os.path.basename(vis_file)],
+        'Source': [target_source],
+        'Peak(Jy/beam)': [float(outputs[1])],
+        'rms(Jy/beam)': [float(outputs[2])],
+        'cmul(Jy/beam)': [float(outputs[3])],
+        'bmaj(mas)': [float(outputs[5])],
+        'bmin(mas)': [float(outputs[4])],
+        'bpa(deg)': [float(outputs[6])],
+        'bad_ant': [flag_ant]}
+ 
+       df = pd.DataFrame(data)
+       df.to_csv('%s.csv' % vis_file, index=False)
+   else:
+       print('No content found between markers.')
 
 if interferometer == 'VLBA':
    # target source imaging
@@ -641,5 +681,5 @@ if interferometer == 'VLBA':
    #                       out_dir=outdir, target_name=target_source)
 
    #os.system('ps2pdf ./data/%.ps')
-   plot_cleanimage('%s/%s.fits' % (outdir, targetsource))
+   plot_cleanimage('%s/%s.fits' % (outdir, targetsource), xyrange)
 
