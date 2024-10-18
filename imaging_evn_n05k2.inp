@@ -1,0 +1,35 @@
+# -----------------------------------------------
+# required parameters
+
+# strong point source uvfits file
+poitsourceuvfits = ./data/EVN/n05k2/n05k2_NRAO512.UVDATA.FITS
+
+# target source uvfits file
+visfile = ./data/EVN/n05k2/n05k2_NRAO512.UVDATA.FITS
+
+# win file in CLEAN step 
+cleanwinfile = ./data/origin.win
+
+# target source name for the name in save clean map 
+targetsource = 'NRAO512'
+
+# out directory
+outdir = ./data/EVN/n05k2
+
+# map size 
+mapsize = 2048
+
+# pixel size       
+pixelsize = 0.02
+
+# clean gain
+clean_gain = 1.0
+
+#clean sigma 
+cleansigma = 8
+
+# name of the interferometer
+interferometer = EVN
+
+#xy range
+xyrange = '-10,10,-10,10' 

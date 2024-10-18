@@ -231,7 +231,17 @@ def set_default_bparms(task):
         bparm[8] = -180
         bparm[9] = 180
 
-    return bparm   
+    return bparm  
+
+def set_default_dparms(task):
+    # cf aparms above
+    dparm = []
+    dparm[1:] = [0 for i in range(10)]
+    if task == 'fring':
+        dparm[1] = 2
+        dparm[4] = 0
+
+    return dparm 
 
 def runlwpla(indata, outfile, inver=None, plver=1):
 
@@ -418,7 +428,7 @@ def runantab(antab_file, indata, tyver=1, gcver=1, offset=0., sparm=[]):
     antab()
     logger.info('Task ANTAB appears to have ended successfully')
    
-def runbpass(refant, indata, calsour):
+def runbpass(refant, indata, calsour, gainuse=3, interferometer='EAVN'):
 
     """Must set refant, calsour, indata"""
     #assert (refant != None, calsour != None, indata != None), '''set
@@ -427,18 +437,29 @@ def runbpass(refant, indata, calsour):
     bpass = AIPSTask('bpass')
     bpass.indata = indata
     bpass.calsour[1:] = calsour
-    #bpass.freqid = 1
-    #bpass.bif = 1
-    #bpass.eif = 0
-    #bpass.flagver= 1
-    #bpass.subarray = 1
-    bpass.docalib = 1
-    bpass.gainuse = 3
-    bpass.solint = 0
+    bpass.gainuse = gainuse
+    if interferometer == 'EVN':
+       bpass.freqid = 1
+       #bpass.bif = 1
+       #bpass.eif = 0
+       bpass.flagver= 1
+       bpass.subarray = 1
+       bpass.docalib = 2
+       bpass.solint = -1
+       #bpass.gainuse = 3
+    else:
+       bpass.docalib = 1
+       #bpass.gainuse = 3
+       bpass.solint = 0
     bpass.refant = refant
-    bpass.soltype = 'l1r'
-    #bpass.bpver = 1
-    #bpass.smooth[1] = 1
+    if interferometer == 'EVN':
+        bpass.soltype = 'L1'
+    else: 
+        bpass.soltype = 'l1r'
+    if interferometer == 'EVN':
+       #bpass.bpver = 1
+       bpass.smooth[1] = 1
+    #if interferometer != 'EVN': 
     bpass.bpassprm[1] = 1
     bpass.bpassprm[5] = 1
     bpass.bpassprm[9] = 1
@@ -495,7 +516,7 @@ def runfring(indata, snver, solint, aparm, dparm, refant, freqid=1,
     logger.info('Task FRING appears to have ended successfully')
 
 def runsplit(indata, sources=[], gainuse=0, doband=0, bpver=0, #outseq=0,
-        docalib=2):
+        docalib=2, interferometer='EAVN'):
 
     """Must set indata"""
     #assert (indata != None)
@@ -514,7 +535,7 @@ def runsplit(indata, sources=[], gainuse=0, doband=0, bpver=0, #outseq=0,
     split.outclass = 'SPLIT'
     split.outdisk = indata.disk
     #split.outseq = outseq
-    #split.subarray = 1
+    split.subarray = 1
     split.bchan = 17
     split.echan = 240
     split.sources[1:] = sources#[bsource:esource+1]
@@ -523,7 +544,8 @@ def runsplit(indata, sources=[], gainuse=0, doband=0, bpver=0, #outseq=0,
     split.doband = doband
     split.aparm[1] = 2
     split.bpver = bpver
-    #split.aparm[4] = 1
+    if interferometer=='EVN': 
+       split.aparm[4] = 1
     split()
 
 
@@ -697,14 +719,17 @@ def runtacop(indata,inext='SN',invers=0,outvers=0):
     tacop.outdata = indata
     tacop()
 
-def runclcor_pang(indata, gainver, gainuse):
+def runclcor_pang(indata, gainver, gainuse, interferometer='EAVN'):
     logger.info('Task clcor_pang  (release of 31DEC24) begins')
     clcor = AIPSTask('clcor')
     clcor.indata = indata
     clcor.gainver = gainver
     clcor.gainuse = gainuse
     clcor.opcode = 'PANG'
-    clcor.clcorprm[1] = 1
-    clcor.clcorprm[2:] = [0]
+    if interferometer == 'EVN':
+       clcor.clcorprm[1] = 1
+       clcor.clcorprm[2:] = [0]
+    else:
+       clcor.clcorprm[1:]=[0,1]
     clcor()
     logger.info('Task CLCOR_PANG appears to have ended successfully')

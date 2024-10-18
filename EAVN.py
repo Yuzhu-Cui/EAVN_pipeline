@@ -268,7 +268,7 @@ def EAVN_load(uvdata, msortdata, cltablemin, wtthreshhold, interferometer):
 
     # and run VBGLU if necessary
     if len(heads) > 1:
-        print >>PYPELOG, '\nNeed to VBGLU the data'
+        logger.info('Need to VBGLU the data')
 
         uvdata = glue_data(headdata, vbgludata, fxpoldata)
 
@@ -285,7 +285,7 @@ def EAVN_load(uvdata, msortdata, cltablemin, wtthreshhold, interferometer):
         runindxr(uvavgdata)
         uvdata = uvavgdata
 
-def EAVN_flag(uvdata):
+def EVN_flag(uvdata):
     # Delete any old flag tables.
     uvdata.zap_table('AIPS FG', -1)
 
@@ -297,9 +297,15 @@ def EAVN_flag(uvdata):
         raise "uvflg failed, check " + uvflg_file + " is o.k.!"
 
     # run vlog if necessary
-    doglobal, vlba_missing = vlba_logs(uvdata, vlog_out, vlbacal_file,
+    try:
+        vlog_out = output_prefix + '.vlba'
+        vlbacal_file = getfile('vlbacal')
+        doglobal, vlba_missing = vlba_logs(uvdata, vlog_out, vlbacal_file,
             ifwidth)
-
+    except:
+        logger.info('%s does not exist!' % 'vlbacal_file')
+        doglobal = False
+        
     # run uvflg for any VLBA antennas.
     if doglobal:
         vlba_uvflg_file = vlog_out + '.FLAG'
@@ -310,9 +316,10 @@ def EAVN_flag(uvdata):
             raise "uvflg failed, check " + vlba_uvflg_file + " is o.k.!"
 
 
-    if os.path.exists(chflg_file):
+    try:
+        chflg_file = getfile('chflag')
         runuvflg(indata=uvdata, infile=chflg_file)
-    else:
+    except:
         # flag the edge channels if no chflag file given
         logger.info(chflg_file + " is missing")
 
@@ -474,7 +481,6 @@ def EAVN_ampcal(antab_file, uvdata):
     logger.info('Antab file= %s' % antab_file)
     runantab(antab_file, uvdata)
 
-
     doglobal, sparm = global_exper(uvdata)
     if doglobal:
         # if a global then we must run ANTAB again, but add missing VLBA
@@ -513,8 +519,6 @@ def EAVN_ampcal(antab_file, uvdata):
     runsnplt(uvdata, 'CL', 3, 'AMP', nplots=antenna_nums)
     plot(uvdata, def_name('GAIN'), dopng=dopng)
 
-    # Do the parallactic angle correction.
-    #runclcor(indata=uvdata, clcorprm=[0,1], opcode='PANG', gainver=2, gainuse=2)            
 
 def EVN_ampcal(antab_file, uvdata):
     # run ANTAB and APCAL. Also VLOG for any VLBA antennas
@@ -529,28 +533,33 @@ def EVN_ampcal(antab_file, uvdata):
     logger.info('Antab file= %s' % antab_file)
     runantab(antab_file, uvdata)
 
+    try:
+       doglobal, sparm = global_exper(uvdata)
+       if doglobal:
+           # if a global then we must run ANTAB again, but add missing VLBA
+           # antennas to SPARM in ANTAB (uggh!).
 
-    doglobal, sparm = global_exper(uvdata)
-    if doglobal:
-        # if a global then we must run ANTAB again, but add missing VLBA
-        # antennas to SPARM in ANTAB (uggh!).
-
-        antab_file = vlog_out + '.TSYS'
-        logger.info('Antab file= %s' % antab_file)
-        runantab(antab_file, uvdata, sparm=sparm)
-
+           antab_file = vlog_out + '.TSYS'
+           logger.info('Antab file= %s' % antab_file)
+           runantab(antab_file, uvdata, sparm=sparm)
+    except:
+       logger.info('%s does not exist!' % 'vlba_TSYS')
 
     uvdata.zap_table('AIPS PL', -1)
     runsnplt(uvdata, 'TY', 1, 'TSYS', nplots=antenna_nums)
     plot(uvdata, def_name('TSYS'), dopng=dopng)
 
-    runapcal(indata=uvdata)
+    #runapcal(indata=uvdata)
+    cl_hv = uvdata.table_highver('CL')
+    sn_hv= uvdata.table_highver('SN')
+
+    runapcal(indata=uvdata, tyver=1, gcver=1, snver=sn_hv+1, freqid=1, opcode='CALI', interferometer='EVN')
 
     # use 'box', dobtween and doblank so no sources get left out
     cl_hv = uvdata.table_highver('CL')
     sn_hv= uvdata.table_highver('SN')
     runclcal(gainver=cl_hv, gainuse=cl_hv+1, indata=uvdata, snver=sn_hv,
-            refant=refantlist[0], interpol='2PT', doblank=1, dobtween=1,
+            refant=refantlist[0], interpol='SELF', doblank=1, dobtween=1,
             samptype='BOX')
     
     cl_hv = uvdata.table_highver('CL')
@@ -563,7 +572,7 @@ def EVN_ampcal(antab_file, uvdata):
     cl_hv = uvdata.table_highver('CL')
     sn_hv= uvdata.table_highver('SN')
     # Do the parallactic angle correction.
-    runclcor_pang(indata=uvdata, gainver=cl_hv, gainuse=cl_hv+1)
+    runclcor_pang(indata=uvdata, gainver=cl_hv, gainuse=cl_hv)
 
 def EAVN_fring(fringdata, rmcalsour):
     # run fring (on averaged data set if necessary)
@@ -609,7 +618,10 @@ def EAVN_fring(fringdata, rmcalsour):
 def EVN_fring(fringdata):
     aparm = set_default_aparms('fring')
     dparm = set_default_dparms('fring')
-      
+    #aparm[1] = 3
+    #dparm[1] = 2
+    #dparm[2] = 8000.
+    #dparm[3] = 500. 
     cl_hv = uvdata.table_highver('CL')
     sn_hv= uvdata.table_highver('SN')
     runfring(indata=fringdata, gainuse=cl_hv, refant=refantlist[0], snver=sn_hv+1, 
@@ -629,10 +641,10 @@ def EVN_fring(fringdata):
     # that calsour and target must be passed to runclcal as lists.
     cl_hv = uvdata.table_highver('CL')
     sn_hv= uvdata.table_highver('SN')
-    for (calibrator, target) in ( zip (phaseref_sources, target_sources) +
-                    zip (selfcal_sources, selfcal_sources)):
-        runclcal(indata=uvdata, opcode='CALI', interpol='AMBG', snver=sn_hv,
-                gainver=cl_hv, gainuse=cl_hv+1, calsour=[calibrator], sources=[target],
+    #for (calibrator, target) in ( zip (phaseref_sources, target_sources) +
+    #                zip (selfcal_sources, selfcal_sources)):
+    runclcal(indata=uvdata, opcode='CALI', interpol='AMBG', snver=sn_hv,
+                gainver=cl_hv, gainuse=cl_hv+1, calsour=phaseref_sources+selfcal_sources, sources=target_sources+selfcal_sources,
                 refant=refantlist[0])
 
 
@@ -664,9 +676,9 @@ control = parse_inp(args[0])
 # check the inputs and re-type where necessary
 checkin(control)
 
-#if interferometer == 'VLBA' or interferometer == 'EVN':
-#   uvflg_file = getfile('uvflg')
-#   assert(os.path.isfile(uvflg_file)), uvflg_file + ' does not exist!'
+if interferometer == 'EVN':
+   uvflg_file = getfile('uvflg')
+   assert(os.path.isfile(uvflg_file)), uvflg_file + ' does not exist!'
 
 if interferometer == 'EAVN' or interferometer == 'EVN':
    # get some necessary files assuming standard names
@@ -688,7 +700,7 @@ if tmask[0] <= 1 <= tmask[1]:
     elif interferometer == 'VLBA':
        EAVN_load(uvdata, msortdata, 0.25, 0.7, interferometer)
     elif interferometer == 'EVN':
-       EAVN_load(uvdata, msortdata, 1./60., 0, interferometer)
+       EAVN_load(uvdata, msortdata, 0.25, 0, interferometer)
     else:
        raise ValueError('Please input the correct interferometer name: EAVN, VLAB or EVN!')   
     logger.info('Ending tmask 1')
@@ -893,7 +905,7 @@ if interferometer == 'VLBA':
           cl_hv = uvdata.table_highver('CL')
           sn_hv= uvdata.table_highver('SN')
           logger.info('Running bpass')
-          runbpass(refant=refantlist[0],indata=uvdata, calsour=bpass_calibrators) #refant=refantlist[0]
+          runbpass(refant=refantlist[0],indata=uvdata, calsour=bpass_calibrators, gainuse=cl_hv) #refant=refantlist[0]
           # Do the less time consuming plots now
           cl_hv = uvdata.table_highver('CL')
           sn_hv= uvdata.table_highver('SN')
@@ -908,7 +920,7 @@ if interferometer == 'VLBA':
           table_vers(uvdata=uvdata, cl=cl_hv, sn=sn_hv, fg=0, bp=0)
           logger.info('Determine bandpass corrections')
           logger.info('Running bpass')
-          runbpass(refant=refantlist[0],indata=uvdata, calsour=bpass_calibrators) #refant=refantlist[0]
+          runbpass(refant=refantlist[0],indata=uvdata, calsour=bpass_calibrators, gainuse=cl_hv) #refant=refantlist[0]
           # Do the less time consuming plots now
           cl_hv = uvdata.table_highver('CL')
           sn_hv= uvdata.table_highver('SN')
@@ -1075,9 +1087,9 @@ if interferometer == 'EVN':
        fg_hv = uvdata.table_highver('FG')
        logger.info('Starting tmask 2, flag using uvflg monitor data and flag band edges and run vlog')
        logger.info('Before tmask 2: CL table %d, SN table %d, FG table %d' % (cl_hv, sn_hv, fg_hv))
-       table_vers(uvdata=uvdata, cl=cl_hv, sn=n_hv, fg=fg_hv, bp=0)
+       table_vers(uvdata=uvdata, cl=cl_hv, sn=sn_hv, fg=fg_hv, bp=0)
        logger.info('Running flag') 
-       EAVN_flag(uvdata)
+       EVN_flag(uvdata)
        cl_hv = uvdata.table_highver('CL')
        sn_hv= uvdata.table_highver('SN')
        fg_hv = uvdata.table_highver('FG')
@@ -1140,7 +1152,7 @@ if interferometer == 'EVN':
        logger.info('Before tmask 6: CL table %d, SN table %d, FG table %d' % (cl_hv, sn_hv, fg_hv))
        table_vers(uvdata=uvdata, cl=cl_hv, sn=sn_hv, fg=fg_hv, bp=0)
        logger.info('Running bpass')
-       runbpass(refant=refantlist[0],indata=uvdata, calsour=bpass_calibrators)
+       runbpass(refant=refantlist[0],indata=uvdata, calsour=bpass_calibrators, gainuse=cl_hv, interferometer='EVN')
        cl_hv = uvdata.table_highver('CL')
        sn_hv= uvdata.table_highver('SN')
        fg_hv = uvdata.table_highver('FG')
@@ -1171,17 +1183,19 @@ if interferometer == 'EVN':
        logger.info('Starting tmask 8: split the calibrated data')
        cl_hv = uvdata.table_highver('CL')
        sn_hv= uvdata.table_highver('SN')
+       fg_hv = uvdata.table_highver('FG')
        bp_hv = uvdata.table_highver('BP')
        logger.info('Before tmask 8: CL table %d, SN table %d, BP table %d' % (cl_hv, sn_hv, bp_hv))
 
-       table_vers(uvdata=uvdata, cl=cl_hv, sn=sn_hv, fg=0, bp=bp_hv)
-       sources = list(sources)
-       for source in sources:
+       table_vers(uvdata=uvdata, cl=cl_hv, sn=sn_hv, fg=fg_hv, bp=bp_hv)
+       sources = read_nx(uvdata, sources)
+       sources = list(sources) #target_sources
+       for source in sources:#target_sources:#sources:
            splitdata = AIPSUVData(source, 'SPLIT', uvdata.disk, 1)
            zap_old_data(splitdata)
        logger.info('Running split')
        runsplit(sources=sources, indata=uvdata, gainuse=cl_hv, docalib=1,
-               doband=nbp_table, bpver=nbp_table) #, outseq=1)
+               doband=nbp_table, bpver=nbp_table, interferometer='EVN') #, outseq=1)
 
        logger.info('Ending tmask 8')
 

@@ -510,63 +510,6 @@ def difmap_modeling_vlba(visfile,
     difmap.communicate()
     print('imaging done!')
 
-    #Modeling
-
-    #clrmod true
-    #
-    #!Fit first (elliptical-gaussian) component
-    #
-    #addcmp peak(flux),true,peak(x),peak(y),true,{major_axis},true,{minor_axis},true,{phi},true,{m_type}
-    #modelfit model_iter
-    #
-    #!Fit other (cirle-gaussian) components
-    #i = 0
-    #repeat;\
-    #	i = i + 1
-    #	if(peak(flux)/imstat(rms) > model_sigma)
-    #		addcmp peak(flux),true,peak(x),peak(y),true,1,false,1,false,{phi},true,1
-    #		modelfit model_iter
-    #	end if
-    #until(i >= {max_loop})
-    #
-    #!Image with model components
-    #!device {obj}.ps/vcps
-    #device {obj}.ps/vps
-    #mapl clean, true 
-    #
-    #!get clean image and beam statistics
-    #print "MARKING_STRING"
-    #print peak(flux)
-    #print imstat(rms)
-    #print cmul
-    #print imstat(bmin)
-    #print imstat(bmaj)
-    #print imstat(bpa)
-    #print "END_MARKING"
-    #
-    #!Write model components parameters to a .mod file
-    #wmod {obj}.mod
-    #
-    #!save modelfit map
-    #save {obj}
-    #
-    #!quit from difmap
-    #quit'''.format(obj_file=visibility_file,
-    #			obj=output_name,
-    #			clean_sigma=clean_sigma,
-    #			map_size=map_size,
-    #			pixel_size=pixel_size,
-    #			observation_length=observation_length,
-    #			model_sigma=model_sigma,
-    #			phi=phi,
-    #			major_axis=major_axis,
-    #			minor_axis=minor_axis,
-    #			m_type=model_type,
-    #			model_iter=model_iter,
-    #			max_loop=max_jet_component_number));
-    #
-    #fn.close();
-
 
 # main function
 usage = 'usage: python3 %prog [options] imaging.inp'
@@ -652,7 +595,7 @@ if interferometer == 'EAVN':
    else:
        print('No content found between markers.')
 
-if interferometer == 'VLBA':
+if interferometer == 'VLBA' or interferometer == 'EVN':
    # target source imaging
    vis_file = visfile
    clean_win_file = cleanwinfile
@@ -682,4 +625,33 @@ if interferometer == 'VLBA':
 
    #os.system('ps2pdf ./data/%.ps')
    plot_cleanimage('%s/%s.fits' % (outdir, targetsource), xyrange)
+   logfile.close()
+   log_file = "difmap.log"
+   START_MARKER = "MARKING_STRING"
+   END_MARKER = "END_MARKING"
+   extracted_content = extract_content_between_markers(log_file, START_MARKER, END_MARKER)
+   if extracted_content:
+       #imstat(rms);print cmul;print imstat(bmin);print imstat(bmaj);print imstat(bpa)
+       outputs = extracted_content.split('\n')
+       print('clean map info:')
+       print('peak: %s Jy/beam' % outputs[1])
+       print('rms: %s Jy/beam' % outputs[2])
+       print('cmul: %s Jy/beam' % outputs[3])
+       print('bmaj: %s mas' % outputs[5])
+       print('bmin: %s mas' % outputs[4])
+       print('bpa: %s deg' % outputs[6])
+       data = {'file_name': [os.path.basename(vis_file)],
+        'Source': [target_source],
+        'Peak(Jy/beam)': [float(outputs[1])],
+        'rms(Jy/beam)': [float(outputs[2])],
+        'cmul(Jy/beam)': [float(outputs[3])],
+        'bmaj(mas)': [float(outputs[5])],
+        'bmin(mas)': [float(outputs[4])],
+        'bpa(deg)': [float(outputs[6])],
+        }
+
+       df = pd.DataFrame(data)
+       df.to_csv('%s.csv' % vis_file, index=False)
+   else:
+       print('No content found between markers.')
 
