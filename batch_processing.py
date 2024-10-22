@@ -231,17 +231,20 @@ for interferometer in interferometers:
            with open('template.inp', 'r') as file:
                lines = file.readlines()
  
-           new_filename = '%s/%s/raw/%s.inp' % (data_dir, interferometer, experiment)
+           new_filename = '%s/%s/%s/%s.inp' % (data_dir, interferometer, experiment, experiment)
            param_names = ['experiment', 'userno', 'refant', 
                           'plotref', 'bpass', 'phaseref',
                            'target', 'fitsdir', 'indir',
                            'outdir', 'fits_file', 'interferometer',
                            'eop_path', 'tecdir']
-           outdir = '%s/%s/raw' % (data_dir, interferometer)
-           tecdir = '%s/%s/raw/' % (data_dir, interferometer)
+           fitsdir = '%s/%s/raw' % (data_dir, interferometer)
+           outdir = '%s/%s/%s' % (data_dir, interferometer, experiment)
+           if not os.path.exists(outdir):
+              os.makedirs(outdir)
+           tecdir = '%s/%s/%s/' % (data_dir, interferometer, experiment)
            new_values = [experiment, '1001', uvdata.antennas[refant_id[0]-1], 
                          uvdata.antennas[refant_id[0]-1], bpass_calibrator, 
-                         bpass_calibrator, target, outdir, outdir,
+                         bpass_calibrator, target, fitsdir, fitsdir,
                          outdir, fits_file, interferometer, tecdir,
                          tecdir 
                          ] 
@@ -255,3 +258,32 @@ for interferometer in interferometers:
                            line = '%s\n' % line 
                    file.write(line)
            os.system('ParselTongue EAVN.py %s' % new_filename)
+           if interferometer == 'EAVN':
+              with open('imaging.inp', 'r') as file:
+                  lines_img = file.readlines()
+           else:
+              with open('imaging_vlba.inp', 'r') as file:
+                  lines_img = file.readlines()
+
+           new_filename_img = '%s/%s/%s/imaging_%s.inp' % (data_dir, interferometer, experiment, experiment)
+           param_names_img = ['poitsourceuvfits', 'visfile', 'targetsource', 'outdir']
+           new_values_img = ['%s/%s/%s/%s_1219+044.UVDATA.FITS' % (data_dir, interferometer, experiment,experiment),
+                         '%s/%s/%s/%s_%s.UVDATA.FITS' % (data_dir, interferometer, experiment, experiment, target),
+                         '%s_%s' % (experiment, target), outdir]
+
+           with open(new_filename_img, 'w') as file:
+               for line in lines_img:
+                   for index, param_name in enumerate(param_names_img):
+                       if line.startswith(param_name):
+                           items = line.split('=')
+                           items[-1] = str(new_values_img[index])
+                           line = ' = '.join(items)
+                           line = '%s\n' % line
+                   file.write(line)
+ 
+           os.system('python3 difmap_imaging.py %s' % new_filename_img)
+
+
+
+
+            
