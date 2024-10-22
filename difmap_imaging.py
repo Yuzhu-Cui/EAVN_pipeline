@@ -201,8 +201,8 @@ def check_data(uvfile):
     ant_n_all = list(set(list(set(ant1_n)) + list(set(ant2_n))))
     print('Antennas: ', ant_n_all)
     fig, ax = plt.subplots(2,1, figsize=(8,12))
-    colors = ['b', 'k', 'r', 'g', 'm', 'y', 'c']
-    markers = ['o', '.', '^', '*', 'v', 's', 'D']
+    colors = ['b', 'k', 'r', 'g', 'm', 'y', 'c', 'pink', 'olive', 'tan']
+    markers = ['o', '.', '^', '*', 'v', 's', 'D', '1', '2', '3']
     amp_means = []
     amp_medians = []
     phase_means = []
