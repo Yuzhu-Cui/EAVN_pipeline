@@ -17,7 +17,7 @@ refant = LA
 plotref = SC
 
 # bpass is a list of sources for bandpass calibration
-bpass = 3C274
+bpass = 3C279
 
 # phaseref and target must be set if phase referencing. Each source in target
 # list will be phase calibrated by the corresponding source in phaseref list.

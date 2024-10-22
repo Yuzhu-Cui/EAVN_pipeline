@@ -8,6 +8,7 @@ tmask = 1
 # if a multiple pass experiment then append the pass number to the experiment
 # name (e.g. M87)
 experiment = a17078a        
+
 userno = 1003          
 
 # refant is a prioritised list of reference antennas
@@ -22,6 +23,7 @@ bpass = 3C273
 # phaseref and target must be set if phase referencing. Each source in target
 # list will be phase calibrated by the corresponding source in phaseref list.
 phaseref = 3C273
+
 target = M87 
 
 # solint defaults to typical scan length on phase calibrator. Must be set if
@@ -34,11 +36,10 @@ target = M87
 # directories default to $IN/<experiment>, $OUT/<experiment>,
 # $PIPEFITS/<experiment>
 fitsdir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data
-#/share/data/askap/bqlao/EAVN/EAVN_pipeline/data 
+
 indir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data
-#/share/data/askap/bqlao/EAVN/EAVN_pipeline/data
+
 outdir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data   
-#/share/data/askap/bqlao/EAVN/EAVN_pipeline/data
 
 # fits_file defaults to EVN archive standard names. Do not give the full path
 # (the directory will be taken from the fitsdir parameter)
@@ -61,6 +62,7 @@ fits_file = a17078a.fits
 
 # averages default to 0
 avg = 0
+
 plotavg = 0.5
 
 # -----------------------------------------------
