@@ -11,20 +11,30 @@ This pipeline is primarily designed for the data reduction of the East Asia VLBI
 Detailed installation steps can be found in: [install.md](https://github.com/lao19881213/EAVN_pipeline/blob/main/install.md).
 
 ## Usage
-- Load software environment
+- Set up software environment 
+Add all dependency environments to a file (for example, bashrc), and then: 
 ```
 source bashrc
 ```
-- Data calibration
+- Single data file 
+-- Calibration 
+-- Edit the input file (template.inp) and set the required parameters 
+-- Run the data calibration pipeline:  
 ```
 ParselTongue EAVN.py template.inp
 ```
-- imaging
+-- Imaging
+-- Edit the input file (imaging.inp) and set the required parameters
+-- Run the imaging pipeline:
 ```
 python3 difmap_imaging.py imaging.inp
 ```
+- Multiple data files batch processing
+```
+ParselTongue batch_processing.py  
+```
 
-## Credits
+## Contributors
 Baoqiang Lao, Yuzhu Cui
 
 ## References
