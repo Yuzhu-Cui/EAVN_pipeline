@@ -18,14 +18,14 @@ source bashrc
 ```
 #### Single data file processing 
 - Calibration   
-- Edit the input file (template.inp) and set the required parameters  
-- Run the data calibration pipeline:  
+1. Edit the input file (template.inp) and set the required parameters  
+2. Run the data calibration pipeline:  
 ```
 ParselTongue EAVN.py template.inp
 ```
-#### Imaging
-- Edit the input file (imaging.inp) and set the required parameters
-- Run the imaging pipeline:
+- Imaging  
+1. Edit the input file (imaging.inp) and set the required parameters  
+2. Run the imaging pipeline:
 ```
 python3 difmap_imaging.py imaging.inp
 ``` 
