@@ -16,7 +16,7 @@ Detailed installation steps can be found in: [install.md](https://github.com/lao
 ```
 source bashrc
 ```
-#### Single data file  
+#### Single data file processing 
 - Calibration   
 - Edit the input file (template.inp) and set the required parameters  
 - Run the data calibration pipeline:  
