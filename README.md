@@ -3,7 +3,7 @@ This pipeline is primarily designed for the data reduction of the East Asia VLBI
 
 
 ## Dependencies
-- [PGPLOT](https://sites.astro.caltech.edu/~tjp/pgplot/)
+- [PGPLOT](https://sites.astro.caltech.edu/~tjp/pgplot/) (version=5.2)
 - [AIPS](http://www.aips.nrao.edu/index.shtml) (version=31DEC24)
 - [Parseltongue](https://www.jive.eu/jivewiki/doku.php?id=parseltongue:parseltongue) (version=3.0)
 - [Difmap](https://science.nrao.edu/facilities/vlba/docs/manuals/oss2013a/post-processing-software/difmap) (version=2.5q)
