@@ -1,5 +1,5 @@
 # EAVN_pipeline
-This pipeline is primarily designed for the data reduction of the East Asia VLBI Network ([EAVN](https://radio.kasi.re.kr/eavn/main.php)) but is versatile enough to be used for general VLBI data processing. The pipeline automates the entire data reduction process, integrating command-line tools for tasks such as data ingestion, editing, calibration, and imaging into a streamlined workflow. The process is divided into two key stages: calibration and imaging. In the calibration stage, the pipeline handles the preparation and refinement of the data, ensuring accurate and high-quality input for the imaging stage, where the final science-ready images are produced. This automation reduces human error and increases processing efficiency for large datasets.
+This pipeline is primarily designed for the data reduction of the East Asia VLBI Network ([EAVN](https://radio.kasi.re.kr/eavn/main.php)) but is versatile enough to be used for general VLBI data processing (e.g. [VLBA](https://science.nrao.edu/facilities/vlba) and [EVN](https://evlbi.org/)). The pipeline automates the entire data reduction process, integrating command-line tools for tasks such as data ingestion, editing, calibration, and imaging into a streamlined workflow. The process is divided into two key stages: calibration and imaging. In the calibration stage, the pipeline handles the preparation and refinement of the data, ensuring accurate and high-quality input for the imaging stage, where the final science-ready images are produced. This automation reduces human error and increases processing efficiency for large datasets.
 
 
 ## Dependencies
@@ -8,7 +8,7 @@ This pipeline is primarily designed for the data reduction of the East Asia VLBI
 - [Parseltongue](https://www.jive.eu/jivewiki/doku.php?id=parseltongue:parseltongue) (version=3.0)
 - [Difmap](https://science.nrao.edu/facilities/vlba/docs/manuals/oss2013a/post-processing-software/difmap) (version=2.5q)
 - [Anaconda](https://www.anaconda.com/) (version=2021.05)  
-Detailed installation steps can be found in: [install.md](https://github.com/lao19881213/EAVN_pipeline/blob/main/install.md).
+Detailed installation steps can be found in: [install.md](https://github.com/Yuzhu-Cui/EAVN_pipeline/blob/main/install.md).
 
 ## Usage
 ### Set up software environment  
