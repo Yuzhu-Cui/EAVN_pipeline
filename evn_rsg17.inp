@@ -3,26 +3,26 @@
 
 # tmask is a range of steps to be carried out. tmask=1 will run the whole
 # pipeline. 
-tmask = 8
+tmask = 1
 
 # if a multiple pass experiment then append the pass number to the experiment
 # name (e.g. M87)
-experiment = gs039        
-userno = 1006          
+experiment = rsg17        
+userno = 1001          
 
 # refant is a prioritised list of reference antennas
-refant = Ef, Pt, Cd
+refant = Ef, Mc, Nt
 
 # plotref is a list of antennas, baselines to which will be plotted.
 plotref = Ef
 
 # bpass is a list of sources for bandpass calibration
-bpass = 1253-055, 1226+023
+bpass = 1156+295, 1222+216
 
 # phaseref and target must be set if phase referencing. Each source in target
 # list will be phase calibrated by the corresponding source in phaseref list.
-phaseref = 1219+044
-target = 1228+126 
+phaseref = J1108-1231, J1107-1226, J1118-1232, J1110-1145
+target = grb171205A, grb171205A, grb171205A, grb171205A
 
 # solint defaults to typical scan length on phase calibrator. Must be set if
 # not phase referencing.
@@ -33,11 +33,11 @@ solint = 2.0
 
 # directories default to $IN/<experiment>, $OUT/<experiment>,
 # $PIPEFITS/<experiment>
-fitsdir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/EVN/gs039
+fitsdir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/EVN/rsg17
 #/share/data/askap/bqlao/EAVN/EAVN_pipeline/data 
-indir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/EVN/gs039
+indir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/EVN/rsg17
 #/share/data/askap/bqlao/EAVN/EAVN_pipeline/data
-outdir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/EVN/gs039
+outdir = /media/hero/Intel6/EAVN/yzcui/EAVN_pipeline/data/EVN/rsg17
 #/share/data/askap/bqlao/EAVN/EAVN_pipeline/data
 
 # fits_file defaults to EVN archive standard names. Do not give the full path

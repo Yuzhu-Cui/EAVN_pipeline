@@ -2,34 +2,34 @@
 # required parameters
 
 # strong point source uvfits file
-poitsourceuvfits = ./data/EVN/gs039/gs039_1219+044.UVDATA.FITS
+poitsourceuvfits = ./data/EVN/rsg17/rsg17_1156+295.UVDATA.FITS
 
 # target source uvfits file
-visfile = ./data/EVN/gs039/gs039_1219+044.UVDATA.FITS
+visfile = ./data/EVN/rsg17/rsg17_1222+216.UVDATA.FITS
 
 # win file in CLEAN step 
 cleanwinfile = ./data/origin.win
 
 # target source name for the name in save clean map 
-targetsource = '1219+044'
+targetsource = '1222+216'
 
 # out directory
-outdir = ./data/EVN/gs039
+outdir = ./data/EVN/rsg17
 
 # map size 
-mapsize = 512
+mapsize = 1024
 
 # pixel size       
-pixelsize = 0.02
+pixelsize = 0.1
 
 # clean gain
-clean_gain = 0.1
+clean_gain = 0.01
 
 #clean sigma 
-cleansigma = 8
+cleansigma = 6
 
 # name of the interferometer
 interferometer = EVN
 
 #xy range
-xyrange = '-10,10,-10,10' 
+xyrange = '-20,20,-20,20' 
