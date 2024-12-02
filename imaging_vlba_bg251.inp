@@ -1,35 +1,34 @@
 # -----------------------------------------------
 # required parameters
-
 # strong point source uvfits file
-poitsourceuvfits = ./data/a17078a_1219+044.UVDATA.FITS
+poitsourceuvfits = ./data/BG251/bg251_3C279.UVDATA.FITS
 
 # target source uvfits file
-visfile = ./data/a17078a_M87.UVDATA.FITS
+visfile = ./data/BG251/bg251_3C274.UVDATA.FITS 
 
 # win file in CLEAN step 
 cleanwinfile = ./data/origin.win
 
 # target source name for the name in save clean map 
-targetsource = 'M87'
+targetsource = '3C274'
 
 # out directory
-outdir = ./data
+outdir = ./data/BG251
 
-# map size 
-mapsize = 2048
+# map size in pixel
+mapsize = 1024
 
-# pixel size       
+# pixel size in mas
 pixelsize = 0.02
 
 # clean gain
 clean_gain = 1.0
 
 #clean sigma 
-cleansigma = 8
+cleansigma = 6
 
 # name of the interferometer
-interferometer = EAVN
+interferometer = VLBA
 
-#xy range
-xyrange = '-20,20,-20,20' 
+# xy range in mas
+xyrange = '-5,5,-5,5'

@@ -496,7 +496,10 @@ def EAVN_ampcal(antab_file, uvdata):
     plot(uvdata, def_name('TSYS'), dopng=dopng)
 
     #Generate SN 2-4 table
-    ant_id = int(get_ant_num(uvdata, fit_ant))
+    if fit_ant == 'TIA':
+       ant_id = int(get_ant_num(uvdata, fit_ant))
+    else:
+       ant_id = 0
     len_ants = len(uvdata.antennas)
     runapcal(indata=uvdata, tyver=1, gcver=1, snver=2, freqid=1, opcode='grid', ant_id=ant_id, len_ants=len_ants)
     uvdata.zap_table('AIPS PL', -1)

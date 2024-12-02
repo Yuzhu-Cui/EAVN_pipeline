@@ -142,6 +142,22 @@ for interferometer in interferometers:
     for f in fs:
         if f.endswith('.fits') or f.endswith('.uvfits') or f.endswith('.idifits'):
            fits_file = f
+           if interferometer == 'EAVN':
+               antab_file = '%s/%s/raw/%s.antab' % (data_dir, interferometer, os.path.splitext(fits_file)[0]) 
+               if not os.path.exists(antab_file):
+                  download_data_dir = '%s/%s/%s' %  (data_dir, interferometer, os.path.splitext(fits_file)[0])
+                  os.system("cat %s/*VERA* > %s" % (download_data_dir, antab_file))
+                  os.system("cat %s/*.ANTAB.1 >> %s" % (download_data_dir, antab_file))
+                  os.system("sed -i \"s/INDEX = 'L1:16'/INDEX = 'L1:8'/g\" %s" % antab_file)
+                  os.system("sed -i \"s/INDEX = 'L1','L2:16'/INDEX = 'L1:8','L5:8'/g\" %s" % antab_file)
+                  os.system("sed -i \"s/INDEX='L1','L2','L3','L4'/INDEX='L1:4','L5:8','L9:12','L13:16'/g\" %s" % antab_file)
+                  os.system("sed -i \"s/INDEX='L1:7:2','R2:8:2'/INDEX ='L1:4','L5:8'/g\" %s" % antab_file)
+                  os.system("sed -i \"s/'R1','R2','R3','R4'/'L5','L6','L7','L8'/g\" %s" % antab_file)
+                  os.system("sed -i \"s/INDEX='L1','L2:16'/INDEX='L1:4','X'/g\" %s" % antab_file)
+                  os.system("sed -i \"s/'R1','L2','L3','L4'/INDEX='X','L1:4','X','X'/g\" %s" % antab_file)
+                  os.system("sed -i \"s/INDEX='L1:1'/INDEX='L1:16'/g\" %s" % antab_file)
+                  os.system("sed -i \"s/T6/TIA/g\" %s" % antab_file)
+                  
            #print(fits_file) 
            experiment = os.path.splitext(fits_file)[0]
            print(experiment)
@@ -236,17 +252,21 @@ for interferometer in interferometers:
                           'plotref', 'bpass', 'phaseref',
                            'target', 'fitsdir', 'indir',
                            'outdir', 'fits_file', 'interferometer',
-                           'eop_path', 'tecdir']
+                           'eop_path', 'tecdir', 'fit_ant']
            fitsdir = '%s/%s/raw' % (data_dir, interferometer)
            outdir = '%s/%s/%s' % (data_dir, interferometer, experiment)
            if not os.path.exists(outdir):
               os.makedirs(outdir)
            tecdir = '%s/%s/%s/' % (data_dir, interferometer, experiment)
+           if 'TIA' in uvdata.antennas:
+              fit_ant = 'TIA'
+           else:
+              fit_ant = ''
            new_values = [experiment, '1001', uvdata.antennas[refant_id[0]-1], 
                          uvdata.antennas[refant_id[0]-1], bpass_calibrator, 
                          bpass_calibrator, target, fitsdir, fitsdir,
                          outdir, fits_file, interferometer, tecdir,
-                         tecdir 
+                         tecdir,fit_ant 
                          ] 
            with open(new_filename, 'w') as file:
                for line in lines:
